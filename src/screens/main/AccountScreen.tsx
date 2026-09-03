@@ -38,8 +38,6 @@ export function AccountScreen() {
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
 
-  const [comingSoon, setComingSoon] = useState<string | null>(null);
-
   const openEdit = () => {
     setDraftProfile(profile);
     setEditOpen(true);
@@ -49,11 +47,20 @@ export function AccountScreen() {
     setEditOpen(false);
   };
 
-  const handleMenuPress = (key: (typeof MENU)[number]["key"], title: string) => {
-    if (key === "shipments") {
-      navigation.navigate("HomeTab", { screen: "MyShipments" });
-    } else {
-      setComingSoon(title);
+  const handleMenuPress = (key: (typeof MENU)[number]["key"]) => {
+    switch (key) {
+      case "shipments":
+        navigation.navigate("HomeTab", { screen: "MyShipments" });
+        break;
+      case "orders":
+        navigation.navigate("OrderHistory");
+        break;
+      case "payment":
+        navigation.navigate("PaymentMethods");
+        break;
+      case "settings":
+        navigation.navigate("Settings");
+        break;
     }
   };
 
@@ -126,7 +133,7 @@ export function AccountScreen() {
           {MENU.map((item, i) => (
             <Pressable
               key={item.title}
-              onPress={() => handleMenuPress(item.key, item.title)}
+              onPress={() => handleMenuPress(item.key)}
               className={`flex-row items-center gap-3 px-4 py-[14px] ${i < MENU.length - 1 ? "border-b-[0.661px] border-[rgba(27,67,50,0.07)]" : ""}`}
             >
               <View className="size-10 items-center justify-center rounded-xl bg-[rgba(27,67,50,0.07)]">
@@ -180,21 +187,6 @@ export function AccountScreen() {
             <TextField icon="credit-card" placeholder="Amount (₦)" value={topUpAmount} onChangeText={setTopUpAmount} keyboardType="number-pad" />
             <View className="pt-2">
               <Button label="Add Funds" onPress={handleTopUp} disabled={!topUpAmount.trim()} />
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={!!comingSoon} transparent animationType="fade" onRequestClose={() => setComingSoon(null)}>
-        <Pressable className="flex-1 items-center justify-center bg-black/50 px-10" onPress={() => setComingSoon(null)}>
-          <Pressable className="w-full items-center rounded-3xl bg-white px-6 py-7" onPress={(e) => e.stopPropagation()}>
-            <View className="mb-3 size-12 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
-              <Feather name="clock" size={22} color="#1B4332" />
-            </View>
-            <Text className="pb-1 font-outfit-extrabold text-[16px] text-ink">{comingSoon}</Text>
-            <Text className="pb-4 text-center font-outfit text-[13px] text-muted">This feature is coming soon.</Text>
-            <View className="w-full">
-              <Button label="Got it" onPress={() => setComingSoon(null)} />
             </View>
           </Pressable>
         </Pressable>

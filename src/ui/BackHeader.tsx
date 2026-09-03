@@ -19,6 +19,7 @@ export function BackHeader({
           onPress={onBack}
           className="size-[38px] items-center justify-center rounded-xl border-[0.661px] border-border-brand bg-[#EEF1EF]"
           hitSlop={6}
+          testID="back-header-button"
         >
           <Feather name="arrow-left" size={19} color="#1B4332" />
         </Pressable>

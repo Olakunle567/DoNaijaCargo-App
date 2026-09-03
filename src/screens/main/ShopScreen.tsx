@@ -6,6 +6,7 @@ import type { HomeStackParamList } from "../../navigation/types";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
+import { useOrders } from "../../orders/OrdersContext";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "Shop">;
 
@@ -31,12 +32,26 @@ export function ShopScreen({ navigation }: Props) {
   const [category, setCategory] = useState("All");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkedOut, setCheckedOut] = useState(false);
+  const { addOrder } = useOrders();
 
   const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   const cartTotal = PRODUCTS.filter((p) => cart[p.name]).reduce((sum, p) => sum + p.price * cart[p.name], 0);
 
   const addToCart = (name: string) => {
     setCart((prev) => ({ ...prev, [name]: (prev[name] ?? 0) + 1 }));
+  };
+
+  const closeCart = () => {
+    setCartOpen(false);
+    setCheckedOut(false);
+  };
+
+  const handleCheckout = () => {
+    const items = PRODUCTS.filter((p) => cart[p.name]).map((p) => ({ name: p.name, emoji: p.emoji, qty: cart[p.name], price: p.price }));
+    addOrder(items, cartTotal);
+    setCart({});
+    setCheckedOut(true);
   };
 
   const filtered = PRODUCTS.filter((p) => {
@@ -138,38 +153,55 @@ export function ShopScreen({ navigation }: Props) {
         ))}
       </View>
 
-      <Modal visible={cartOpen} transparent animationType="fade" onRequestClose={() => setCartOpen(false)}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setCartOpen(false)}>
+      <Modal visible={cartOpen} transparent animationType="fade" onRequestClose={closeCart}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={closeCart}>
           <Pressable className="rounded-t-3xl bg-white px-[18px] pb-8 pt-5" onPress={(e) => e.stopPropagation()}>
             <View className="items-center pb-4">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
-            <Text className="pb-4 font-outfit-extrabold text-[17px] text-ink">Your Cart</Text>
-            {cartCount === 0 ? (
-              <Text className="pb-4 font-outfit text-[13px] text-muted">Your cart is empty. Add something from the Shop.</Text>
+            {checkedOut ? (
+              <View className="items-center py-2">
+                <View className="mb-3 size-14 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
+                  <Feather name="check" size={24} color="#1B4332" />
+                </View>
+                <Text className="pb-1 font-outfit-extrabold text-[17px] text-ink">Order Placed!</Text>
+                <Text className="pb-5 text-center font-outfit text-[13px] text-muted">
+                  Your order is on its way. Track it anytime from Order History.
+                </Text>
+                <View className="w-full">
+                  <Button label="Done" onPress={closeCart} />
+                </View>
+              </View>
             ) : (
               <>
-                {PRODUCTS.filter((p) => cart[p.name]).map((p) => (
-                  <View key={p.name} className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-3">
-                    <View className="flex-row items-center gap-3">
-                      <View className={`size-11 items-center justify-center rounded-xl ${p.bg}`}>
-                        <Text className="text-[20px]">{p.emoji}</Text>
+                <Text className="pb-4 font-outfit-extrabold text-[17px] text-ink">Your Cart</Text>
+                {cartCount === 0 ? (
+                  <Text className="pb-4 font-outfit text-[13px] text-muted">Your cart is empty. Add something from the Shop.</Text>
+                ) : (
+                  <>
+                    {PRODUCTS.filter((p) => cart[p.name]).map((p) => (
+                      <View key={p.name} className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-3">
+                        <View className="flex-row items-center gap-3">
+                          <View className={`size-11 items-center justify-center rounded-xl ${p.bg}`}>
+                            <Text className="text-[20px]">{p.emoji}</Text>
+                          </View>
+                          <View>
+                            <Text className="font-outfit-semibold text-[13px] text-ink">{p.name}</Text>
+                            <Text className="font-outfit text-[11px] text-muted">Qty {cart[p.name]} · {formatNaira(p.price)} each</Text>
+                          </View>
+                        </View>
+                        <Text className="font-outfit-bold text-[13px] text-brand">{formatNaira(p.price * cart[p.name])}</Text>
                       </View>
-                      <View>
-                        <Text className="font-outfit-semibold text-[13px] text-ink">{p.name}</Text>
-                        <Text className="font-outfit text-[11px] text-muted">Qty {cart[p.name]} · {formatNaira(p.price)} each</Text>
-                      </View>
+                    ))}
+                    <View className="flex-row items-center justify-between pt-4">
+                      <Text className="font-outfit-bold text-[15px] text-ink">Total</Text>
+                      <Text className="font-outfit-black text-[20px] text-brand">{formatNaira(cartTotal)}</Text>
                     </View>
-                    <Text className="font-outfit-bold text-[13px] text-brand">{formatNaira(p.price * cart[p.name])}</Text>
-                  </View>
-                ))}
-                <View className="flex-row items-center justify-between pt-4">
-                  <Text className="font-outfit-bold text-[15px] text-ink">Total</Text>
-                  <Text className="font-outfit-black text-[20px] text-brand">{formatNaira(cartTotal)}</Text>
-                </View>
-                <View className="pt-4">
-                  <Button label="CHECKOUT" onPress={() => setCartOpen(false)} />
-                </View>
+                    <View className="pt-4">
+                      <Button label="CHECKOUT" onPress={handleCheckout} />
+                    </View>
+                  </>
+                )}
               </>
             )}
           </Pressable>
