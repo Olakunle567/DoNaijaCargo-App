@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RidingStackParamList } from "../../navigation/types";
 import { AppHeader } from "../../ui/AppHeader";
 import { MapIllustration } from "../../ui/MapIllustration";
+import { PulsingMarker } from "../../ui/PulsingMarker";
 import { Button } from "../../ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -14,11 +16,44 @@ export function RideActiveScreen({ navigation }: Props) {
   const [sheet, setSheet] = useState<"none" | "contact" | "cancel">("none");
   const [message, setMessage] = useState("");
 
+  const leftPct = useSharedValue(78);
+  const topPct = useSharedValue(10);
+
+  useEffect(() => {
+    const easing = Easing.inOut(Easing.quad);
+    leftPct.value = withRepeat(
+      withSequence(withTiming(40, { duration: 2200, easing }), withTiming(20, { duration: 2200, easing })),
+      -1,
+      true
+    );
+    topPct.value = withRepeat(
+      withSequence(withTiming(22, { duration: 2200, easing }), withTiming(34, { duration: 2200, easing })),
+      -1,
+      true
+    );
+  }, [leftPct, topPct]);
+
+  const riderStyle = useAnimatedStyle(() => ({
+    left: `${leftPct.value}%`,
+    top: `${topPct.value}%`,
+  }));
+
   return (
     <View className="flex-1 bg-[#C8DCC5]">
       <View className="absolute inset-0 h-[420px]">
         <MapIllustration width={393} height={420} />
       </View>
+
+      <Animated.View style={[{ position: "absolute" }, riderStyle]}>
+        <View className="size-8 items-center justify-center rounded-full bg-white shadow">
+          <MaterialCommunityIcons name="moped" size={18} color="#1B4332" />
+        </View>
+      </Animated.View>
+
+      <View className="absolute" style={{ left: "20%", top: "34%" }}>
+        <PulsingMarker size={10} ringSize={30} color="#1B4332" />
+      </View>
+
       <SafeAreaView edges={["top"]}>
         <AppHeader />
       </SafeAreaView>

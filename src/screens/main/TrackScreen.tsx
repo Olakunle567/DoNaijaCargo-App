@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { MapIllustration } from "../../ui/MapIllustration";
+import { PulsingMarker } from "../../ui/PulsingMarker";
 
 const MILESTONES = [
   { title: "Order Placed", detail: "Sept 28, 08:12 AM · D.O Naija HQ, Lagos", done: true },
@@ -15,6 +17,22 @@ const MILESTONES = [
 
 export function TrackScreen() {
   const [trackingId, setTrackingId] = useState("DN-2024-08741");
+  const drift = useSharedValue(0);
+
+  useEffect(() => {
+    drift.value = withRepeat(
+      withSequence(
+        withTiming(6, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+  }, [drift]);
+
+  const truckStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: drift.value }],
+  }));
 
   return (
     <ScreenContainer scroll className="px-0">
@@ -27,10 +45,17 @@ export function TrackScreen() {
 
         <View className="mt-4 h-[150px] overflow-hidden rounded-2xl border-[0.661px] border-border-brand">
           <MapIllustration width={358} height={150} />
-          <View className="absolute left-[100px] top-[24px] flex-row items-center gap-1 rounded-[10px] bg-brand px-2 py-[5px]">
-            <Feather name="truck" size={14} color="#fff" />
-            <Text className="font-outfit-bold text-[9px] text-white">In Transit</Text>
-          </View>
+
+          <Animated.View style={[{ position: "absolute", left: 90, top: 55, alignItems: "center" }, truckStyle]}>
+            <View className="flex-row items-center gap-1 rounded-[10px] bg-brand px-2 py-[5px] shadow">
+              <Feather name="truck" size={14} color="#fff" />
+              <Text className="font-outfit-bold text-[9px] text-white">In Transit</Text>
+            </View>
+            <View className="mt-[2px]">
+              <PulsingMarker size={9} ringSize={26} color="#1B4332" />
+            </View>
+          </Animated.View>
+
           <Text className="absolute bottom-3 left-3 font-outfit-semibold text-[9px] tracking-[0.45px] text-brand opacity-70">
             LAGOS, NG
           </Text>

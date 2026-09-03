@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RidingStackParamList } from "../../navigation/types";
 import { AppHeader } from "../../ui/AppHeader";
 import { MapIllustration } from "../../ui/MapIllustration";
+import { BobbingPin } from "../../ui/BobbingPin";
 import { Button } from "../../ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,6 +17,14 @@ const VEHICLES = [
   { key: "van", icon: "van-utility", label: "Van", desc: "Heavy cargo" },
 ] as const;
 
+const NEARBY_RIDERS = [
+  { left: "16%", top: "14%", delay: 0 },
+  { left: "47%", top: "9%", delay: 200 },
+  { left: "67%", top: "24%", delay: 450 },
+  { left: "29%", top: "28%", delay: 100 },
+  { left: "75%", top: "11%", delay: 350 },
+] as const;
+
 export function RideScreen({ navigation }: Props) {
   const [vehicle, setVehicle] = useState<(typeof VEHICLES)[number]["key"]>("bike");
 
@@ -24,6 +33,11 @@ export function RideScreen({ navigation }: Props) {
       <View className="absolute inset-0 h-[420px]">
         <MapIllustration width={393} height={420} />
       </View>
+      {NEARBY_RIDERS.map((r, i) => (
+        <View key={i} className="absolute" style={{ left: r.left, top: r.top }}>
+          <BobbingPin delay={r.delay} />
+        </View>
+      ))}
       <SafeAreaView edges={["top"]}>
         <AppHeader />
       </SafeAreaView>
