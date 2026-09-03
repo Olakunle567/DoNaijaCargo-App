@@ -1,0 +1,160 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isOwnerOf(data) {
+      return isSignedIn() && data.ownerUid == request.auth.uid;
+    }
+
+    // True when none of `fields` are present as top-level keys of `data`.
+    // Used on create, to reject documents that try to set a value the
+    // backend is supposed to compute.
+    function keysExclude(data, fields) {
+      return !data.keys().hasAny(fields);
+    }
+
+    // True when none of `fields` change between the existing doc and the
+    // incoming write. Used on update, so a function-computed field can
+    // exist on the document without a client being able to overwrite it.
+    function noneOf(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function shipmentReadonlyFields() {
+      return ['trackingRef', 'priceBreakdown', 'total', 'status'];
+    }
+
+    function orderReadonlyFields() {
+      return ['total'];
+    }
+
+    // ---------------------------------------------------------------------
+    // users/{uid} — profile. Doc id is the uid, so ownership is the path
+    // segment itself; no ownerUid field needed.
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      allow read, create, update: if isOwner(uid);
+      allow delete: if false;
+
+      // users/{uid}/wallet/current — balance/walletId/currency.
+      // The client creates this exactly once, at sign-up, with the fixed
+      // starting balance (INITIAL_WALLET_BALANCE_NGN in AuthContext.tsx).
+      // Every later write (top-ups, debits) must go through trusted
+      // backend code — Admin SDK bypasses rules — so update/delete stay
+      // closed and the create is pinned to that one starting value.
+      match /wallet/current {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['balance', 'walletId', 'currency'])
+          && request.resource.data.balance == 36650
+          && request.resource.data.currency == 'NGN'
+          && request.resource.data.walletId is string;
+        allow update, delete: if false;
+      }
+
+      // users/{uid}/cart/{productId} — client owns this outright.
+      match /cart/{productId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // products/{id} — catalog. Readable by any signed-in user, writable
+    // only by trusted backend code (e.g. the seed script / an admin tool).
+    // ---------------------------------------------------------------------
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // shipments/{id}
+    // ---------------------------------------------------------------------
+    match /shipments/{shipmentId} {
+      allow read: if isOwnerOf(resource.data);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && keysExclude(request.resource.data, shipmentReadonlyFields());
+
+      allow update: if isOwnerOf(resource.data)
+        && noneOf(['ownerUid'])
+        && noneOf(shipmentReadonlyFields());
+
+      allow delete: if false;
+
+      // shipments/{id}/milestones/{mid} — tracking timeline, only ever
+      // written by a function as the shipment progresses.
+      match /milestones/{milestoneId} {
+        allow read: if isSignedIn()
+          && get(/databases/$(database)/documents/shipments/$(shipmentId)).data.ownerUid == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // rides/{id} — no fields are function-only per spec, so the owner can
+    // freely create/update their own ride (e.g. to set status:'cancelled').
+    // ---------------------------------------------------------------------
+    match /rides/{rideId} {
+      allow read: if isOwnerOf(resource.data);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update: if isOwnerOf(resource.data)
+        && noneOf(['ownerUid']);
+
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // haulageRequests/{id} — quote requests. Nothing on this collection is
+    // called out as function-written, so status ('requested'|'contacted')
+    // is left client-writable; lock it down here if ops staff, not the
+    // client, should be the one flipping it to 'contacted'.
+    // ---------------------------------------------------------------------
+    match /haulageRequests/{requestId} {
+      allow read: if isOwnerOf(resource.data);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      allow update: if isOwnerOf(resource.data)
+        && noneOf(['ownerUid']);
+
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // orders/{id}
+    // ---------------------------------------------------------------------
+    match /orders/{orderId} {
+      allow read: if isOwnerOf(resource.data);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && keysExclude(request.resource.data, orderReadonlyFields());
+
+      allow update: if isOwnerOf(resource.data)
+        && noneOf(['ownerUid'])
+        && noneOf(orderReadonlyFields());
+
+      allow delete: if false;
+    }
+
+    // Default deny for anything not modeled above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
