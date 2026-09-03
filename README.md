@@ -90,8 +90,8 @@ The Expo app itself does not define automated test, lint, or production build sc
 └── src/
 	├── auth/                  # Firebase Auth context and hooks
 	├── lib/firebase.ts        # Firebase app/Auth/Firestore/Functions init + emulator wiring
-	├── shipments/, rides/, haulage/, shop/, wallet/  # Domain hooks + Cloud Functions callable wrappers
-	├── orders/, chat/         # Local-only contexts (not yet backed by Firestore)
+	├── shipments/, rides/, haulage/, shop/, wallet/, orders/  # Domain hooks + Cloud Functions callable wrappers
+	├── chat/                  # Local-only context (not yet backed by Firestore)
 	├── navigation/            # Navigator components and typed route params
 	├── screens/
 	│   ├── auth/              # Splash, sign-in, and sign-up screens
