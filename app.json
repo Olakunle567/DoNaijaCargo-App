@@ -7,9 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.donaijacargo.app"
     },
     "android": {
+      "package": "com.donaijacargo.app",
       "adaptiveIcon": {
         "backgroundColor": "#EEF3F0",
         "foregroundImage": "./assets/android-icon-foreground.png",
