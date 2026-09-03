@@ -21,7 +21,8 @@ import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 SplashScreenModule.preventAutoHideAsync();
 
 function RootNavigator() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
+  if (isInitializing) return null;
   return isAuthenticated ? <MainTabNavigator /> : <AuthNavigator />;
 }
 

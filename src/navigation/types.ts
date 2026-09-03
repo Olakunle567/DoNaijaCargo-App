@@ -1,3 +1,5 @@
+import type { EstimateTiers } from "../shipments/api";
+
 export type AuthStackParamList = {
   Splash: undefined;
   SignIn: undefined;
@@ -25,13 +27,13 @@ export type ShipmentDetails = {
   receiverName: string;
   deliveryAddress: string;
   cargoType: string;
-  weight: string;
+  weightKg: number;
   dimensions: string;
 };
 
 export type ShipStackParamList = {
   Ship: undefined;
-  GetEstimate: ShipmentDetails;
+  GetEstimate: ShipmentDetails & { tiers: EstimateTiers };
   Confirmed: { trackingRef: string };
 };
 

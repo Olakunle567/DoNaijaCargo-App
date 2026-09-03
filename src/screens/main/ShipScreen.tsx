@@ -8,6 +8,7 @@ import { AppHeader } from "../../ui/AppHeader";
 import { TextField } from "../../ui/TextField";
 import { SectionLabel } from "../../ui/SectionLabel";
 import { Button } from "../../ui/Button";
+import { getEstimate } from "../../shipments/api";
 
 type Props = NativeStackScreenProps<ShipStackParamList, "Ship">;
 
@@ -23,22 +24,34 @@ export function ShipScreen({ navigation }: Props) {
   const [weight, setWeight] = useState("");
   const [dimensions, setDimensions] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleGetEstimate = () => {
+  const handleGetEstimate = async () => {
     if (!senderName.trim() || !pickupAddress.trim() || !receiverName.trim() || !deliveryAddress.trim()) {
       setError("Please fill in sender, receiver, and both addresses.");
       return;
     }
     setError("");
-    navigation.navigate("GetEstimate", {
-      senderName: senderName.trim(),
-      pickupAddress: pickupAddress.trim(),
-      receiverName: receiverName.trim(),
-      deliveryAddress: deliveryAddress.trim(),
-      cargoType,
-      weight: weight.trim() || "12.5",
-      dimensions: dimensions.trim() || "—",
-    });
+
+    const weightKg = parseFloat(weight) || 12.5;
+    setLoading(true);
+    try {
+      const tiers = await getEstimate({ weightKg, insured: false });
+      navigation.navigate("GetEstimate", {
+        senderName: senderName.trim(),
+        pickupAddress: pickupAddress.trim(),
+        receiverName: receiverName.trim(),
+        deliveryAddress: deliveryAddress.trim(),
+        cargoType,
+        weightKg,
+        dimensions: dimensions.trim() || "—",
+        tiers,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't get an estimate. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -102,7 +115,7 @@ export function ShipScreen({ navigation }: Props) {
         {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
 
         <View className="py-5">
-          <Button label="GET ESTIMATE" onPress={handleGetEstimate} />
+          <Button label="GET ESTIMATE" onPress={handleGetEstimate} loading={loading} />
         </View>
       </View>
 

@@ -18,9 +18,9 @@ export function SignUpScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     if (!fullName.trim() || !email.trim() || !phone.trim() || !password || !confirmPassword) {
       setError("Please fill in every field.");
       return;
@@ -35,10 +35,13 @@ export function SignUpScreen({ navigation }: Props) {
     }
     setError("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signUp({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim(), password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      signIn();
-    }, 900);
+    }
   };
 
   return (

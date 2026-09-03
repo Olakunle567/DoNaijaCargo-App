@@ -6,36 +6,63 @@ import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { MapIllustration } from "../../ui/MapIllustration";
 import { PulsingMarker } from "../../ui/PulsingMarker";
+import { advanceTracking } from "../../shipments/api";
+import { useTrackedShipment, type TimelineStep } from "../../shipments/useTrackedShipment";
 
-const MILESTONES = [
-  { title: "Order Placed", detail: "Sept 28, 08:12 AM · D.O Naija HQ, Lagos", done: true },
-  { title: "Arrived at Sorting Center", detail: "Sept 28, 11:45 AM · Apapa Sorting Facility", done: true },
-  { title: "In Transit", detail: "Sept 29, 07:30 AM · En route to Abuja", done: true },
-  { title: "Out for Delivery", detail: "Expected Sept 30, from 9:00 AM", done: false },
-  { title: "Delivered", detail: "Pending confirmation", done: false },
-];
+function formatMilestoneDetail(step: TimelineStep) {
+  if (step.state === "pending") return "Pending";
+  if (!step.timestamp) return step.location ?? "";
+  const when = step.timestamp.toDate().toLocaleString("en-NG", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return step.location ? `${when} · ${step.location}` : when;
+}
 
-const KNOWN_TRACKING_ID = "DN-2024-08741";
+function MilestoneBullet({ state }: { state: TimelineStep["state"] }) {
+  if (state === "current") {
+    return (
+      <View className="size-5 items-center justify-center">
+        <PulsingMarker size={12} ringSize={22} color="#1B4332" />
+      </View>
+    );
+  }
+  return (
+    <View
+      className={`size-5 items-center justify-center rounded-full border-[1.984px] ${
+        state === "done" ? "border-brand bg-brand" : "border-[#D1D5DB] bg-white"
+      }`}
+    >
+      {state === "done" ? <Feather name="check" size={10} color="#fff" /> : null}
+    </View>
+  );
+}
 
 export function TrackScreen() {
-  const [queryInput, setQueryInput] = useState(KNOWN_TRACKING_ID);
-  const [trackingId, setTrackingId] = useState(KNOWN_TRACKING_ID);
-  const [loading, setLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const [queryInput, setQueryInput] = useState("");
+  const [activeTrackingRef, setActiveTrackingRef] = useState<string | null>(null);
+  const [advancing, setAdvancing] = useState(false);
+  const [advanceError, setAdvanceError] = useState("");
+  const { shipment, timeline, loading, notFound } = useTrackedShipment(activeTrackingRef);
   const drift = useSharedValue(0);
 
   const handleTrack = () => {
     const query = queryInput.trim().toUpperCase();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (query === KNOWN_TRACKING_ID) {
-        setTrackingId(query);
-        setNotFound(false);
-      } else {
-        setNotFound(true);
-      }
-    }, 700);
+    if (!query) return;
+    setActiveTrackingRef(query);
+  };
+
+  const currentStep = timeline.find((s) => s.state === "current");
+  const isDelivered = shipment?.status === "Delivered";
+
+  const handleAdvance = async () => {
+    if (!shipment) return;
+    setAdvanceError("");
+    setAdvancing(true);
+    try {
+      await advanceTracking({ trackingRef: shipment.trackingRef });
+    } catch (err) {
+      setAdvanceError(err instanceof Error ? err.message : "Couldn't advance tracking.");
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   useEffect(() => {
@@ -68,7 +95,7 @@ export function TrackScreen() {
           <Animated.View style={[{ position: "absolute", left: 90, top: 55, alignItems: "center" }, truckStyle]}>
             <View className="flex-row items-center gap-1 rounded-[10px] bg-brand px-2 py-[5px] shadow">
               <Feather name="truck" size={14} color="#fff" />
-              <Text className="font-outfit-bold text-[9px] text-white">In Transit</Text>
+              <Text className="font-outfit-bold text-[9px] text-white">{shipment?.status ?? "Tracking"}</Text>
             </View>
             <View className="mt-[2px]">
               <PulsingMarker size={9} ringSize={26} color="#1B4332" />
@@ -76,10 +103,10 @@ export function TrackScreen() {
           </Animated.View>
 
           <Text className="absolute bottom-3 left-3 font-outfit-semibold text-[9px] tracking-[0.45px] text-brand opacity-70">
-            LAGOS, NG
+            {shipment?.fromCity ?? "LAGOS, NG"}
           </Text>
           <Text className="absolute right-3 top-3 font-outfit-semibold text-[9px] tracking-[0.45px] text-[#1e3a5f] opacity-70">
-            ABUJA, NG
+            {shipment?.toCity ?? "ABUJA, NG"}
           </Text>
         </View>
 
@@ -88,11 +115,9 @@ export function TrackScreen() {
           <TextInput
             testID="track-id-input"
             className="flex-1 font-outfit-medium text-[13px] text-ink"
+            placeholder="Enter tracking ID, e.g. DN-2024-08741"
             value={queryInput}
-            onChangeText={(t) => {
-              setQueryInput(t);
-              setNotFound(false);
-            }}
+            onChangeText={setQueryInput}
             onSubmitEditing={handleTrack}
             autoCapitalize="characters"
             returnKeyType="search"
@@ -105,57 +130,91 @@ export function TrackScreen() {
           <Text className="pt-2 font-outfit-semibold text-[12px] text-[#DC2626]">No shipment found for that tracking ID.</Text>
         ) : null}
 
-        <View className="mt-4 gap-1 rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-surface p-[18px]">
-          <View className="flex-row items-start justify-between">
-            <View>
-              <Text className="font-outfit-semibold text-[11px] tracking-[0.55px] text-muted">TRACKING ID · {trackingId}</Text>
-              <Text className="pt-1 font-outfit-extrabold text-[18px] text-ink">Estimated Delivery:</Text>
-              <Text className="font-outfit-extrabold text-[18px] text-brand">Tue, Sept 30 · 2–5 PM</Text>
-              <View className="mt-2 flex-row items-center gap-[6px] self-start rounded-full bg-[rgba(27,67,50,0.09)] px-3 py-[5px]">
-                <View className="size-[7px] rounded-full bg-brand" />
-                <Text className="font-outfit-bold text-[12px] text-brand">Arriving Today</Text>
+        {!activeTrackingRef ? (
+          <View className="mt-4 items-center rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-surface p-8">
+            <Feather name="search" size={28} color="#8A9A92" />
+            <Text className="pt-3 text-center font-outfit text-[13px] text-muted">
+              Enter a tracking ID above to see live status and milestones.
+            </Text>
+          </View>
+        ) : null}
+
+        {shipment ? (
+          <>
+            <View className="mt-4 gap-1 rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-surface p-[18px]">
+              <View className="flex-row items-start justify-between">
+                <View>
+                  <Text className="font-outfit-semibold text-[11px] tracking-[0.55px] text-muted">TRACKING ID · {shipment.trackingRef}</Text>
+                  <Text className="pt-1 font-outfit-extrabold text-[18px] text-ink">Status:</Text>
+                  <Text className="font-outfit-extrabold text-[18px] text-brand">{shipment.status}</Text>
+                  <View className="mt-2 flex-row items-center gap-[6px] self-start rounded-full bg-[rgba(27,67,50,0.09)] px-3 py-[5px]">
+                    <View className="size-[7px] rounded-full bg-brand" />
+                    <Text className="font-outfit-bold text-[12px] text-brand">
+                      {currentStep ? currentStep.label : shipment.status}
+                    </Text>
+                  </View>
+                </View>
+                <Feather name="map-pin" size={44} color="#1B4332" style={{ opacity: 0.85 }} />
+              </View>
+
+              <View className="mt-3 flex-row gap-6 border-t-[0.661px] border-[rgba(27,67,50,0.1)] pt-3">
+                <View>
+                  <Text className="font-outfit-medium text-[10px] text-muted">FROM</Text>
+                  <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink" numberOfLines={1}>{shipment.fromCity}</Text>
+                </View>
+                <Text className="font-outfit text-[16px] text-brand">→</Text>
+                <View>
+                  <Text className="font-outfit-medium text-[10px] text-muted">TO</Text>
+                  <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink" numberOfLines={1}>{shipment.toCity}</Text>
+                </View>
+                <View className="flex-1 items-end">
+                  <Text className="font-outfit-medium text-[10px] text-muted">WEIGHT</Text>
+                  <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink">{shipment.cargo.weightKg} kg</Text>
+                </View>
               </View>
             </View>
-            <Feather name="map-pin" size={44} color="#1B4332" style={{ opacity: 0.85 }} />
-          </View>
 
-          <View className="mt-3 flex-row gap-6 border-t-[0.661px] border-[rgba(27,67,50,0.1)] pt-3">
-            <View>
-              <Text className="font-outfit-medium text-[10px] text-muted">FROM</Text>
-              <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink">Lagos, NG</Text>
+            <View className="mt-[14px] rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-white p-[18px]">
+              <Text className="font-outfit-bold text-[13px] tracking-[0.39px] text-brand">SHIPMENT MILESTONES</Text>
+              <View className="mt-4 gap-5">
+                {timeline.map((step) => (
+                  <View key={step.label} className="flex-row items-start gap-4">
+                    <MilestoneBullet state={step.state} />
+                    <View className="flex-1 pt-px">
+                      <Text className={`font-outfit-bold text-[13px] ${step.state === "pending" ? "text-[#9CA3AF]" : "text-ink"}`}>
+                        {step.label}
+                      </Text>
+                      <Text className="pt-[2px] font-outfit text-[11px] text-muted">{formatMilestoneDetail(step)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
-            <Text className="font-outfit text-[16px] text-brand">→</Text>
-            <View>
-              <Text className="font-outfit-medium text-[10px] text-muted">TO</Text>
-              <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink">Abuja, NG</Text>
-            </View>
-            <View className="flex-1 items-end">
-              <Text className="font-outfit-medium text-[10px] text-muted">WEIGHT</Text>
-              <Text className="pt-[2px] font-outfit-bold text-[13px] text-ink">14.5 kg</Text>
-            </View>
-          </View>
-        </View>
 
-        <View className="mt-[14px] rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-white p-[18px]">
-          <Text className="font-outfit-bold text-[13px] tracking-[0.39px] text-brand">SHIPMENT MILESTONES</Text>
-          <View className="mt-4 gap-5">
-            {MILESTONES.map((m) => (
-              <View key={m.title} className="flex-row items-start gap-4">
-                <View
-                  className={`size-5 items-center justify-center rounded-full border-[1.984px] ${
-                    m.done ? "border-brand bg-brand" : "border-[#D1D5DB] bg-white"
-                  }`}
+            {__DEV__ ? (
+              <View className="mt-[14px] rounded-2xl border-[1.322px] border-dashed border-[#D1D5DB] bg-[#FAFAF9] p-4">
+                <Text className="pb-2 font-outfit-bold text-[11px] tracking-[0.44px] text-muted">
+                  DEV ONLY · simulates the next tracking webhook event
+                </Text>
+                <Pressable
+                  onPress={handleAdvance}
+                  disabled={advancing || isDelivered}
+                  className={`flex-row items-center justify-center gap-2 rounded-xl py-[10px] ${isDelivered ? "bg-border" : "bg-ink"}`}
+                  testID="dev-advance-tracking"
                 >
-                  {m.done ? <Feather name="check" size={10} color="#fff" /> : null}
-                </View>
-                <View className="flex-1 pt-px">
-                  <Text className={`font-outfit-bold text-[13px] ${m.done ? "text-ink" : "text-[#9CA3AF]"}`}>{m.title}</Text>
-                  <Text className="pt-[2px] font-outfit text-[11px] text-muted">{m.detail}</Text>
-                </View>
+                  {advancing ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="font-outfit-bold text-[12.5px] text-white">
+                      {isDelivered ? "Delivered — nothing left to advance" : "Advance to next milestone"}
+                    </Text>
+                  )}
+                </Pressable>
+                {advanceError ? <Text className="pt-2 font-outfit-semibold text-[11.5px] text-[#DC2626]">{advanceError}</Text> : null}
               </View>
-            ))}
-          </View>
-        </View>
+            ) : null}
+          </>
+        ) : null}
       </View>
     </ScreenContainer>
   );

@@ -20,7 +20,8 @@ export function SignInScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [error, setError] = useState("");
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
 
   const [forgotOpen, setForgotOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -31,13 +32,25 @@ export function SignInScreen({ navigation }: Props) {
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (!canSubmit) return;
+    setError("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signIn(email.trim(), password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      signIn();
-    }, 900);
+    }
+  };
+
+  const handleSocialSuccess = async (provider: () => Promise<void>) => {
+    try {
+      await provider();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    }
   };
 
   const closeForgot = () => {
@@ -74,6 +87,8 @@ export function SignInScreen({ navigation }: Props) {
       <Pressable className="items-end py-3" onPress={() => setForgotOpen(true)}>
         <Text className="font-outfit-semibold text-[12.5px] text-brand">Forgot Password?</Text>
       </Pressable>
+
+      {error ? <Text className="pb-3 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
 
       <View className="pt-3">
         <Button label="Sign In" onPress={handleSignIn} loading={loading} disabled={!canSubmit} />
@@ -130,8 +145,16 @@ export function SignInScreen({ navigation }: Props) {
         </Pressable>
       </Modal>
 
-      <GoogleAuthSheet visible={googleOpen} onClose={() => setGoogleOpen(false)} onSuccess={() => { setGoogleOpen(false); signIn(); }} />
-      <AppleAuthSheet visible={appleOpen} onClose={() => setAppleOpen(false)} onSuccess={() => { setAppleOpen(false); signIn(); }} />
+      <GoogleAuthSheet
+        visible={googleOpen}
+        onClose={() => setGoogleOpen(false)}
+        onSuccess={() => { setGoogleOpen(false); handleSocialSuccess(signInWithGoogle); }}
+      />
+      <AppleAuthSheet
+        visible={appleOpen}
+        onClose={() => setAppleOpen(false)}
+        onSuccess={() => { setAppleOpen(false); handleSocialSuccess(signInWithApple); }}
+      />
     </ScreenContainer>
   );
 }

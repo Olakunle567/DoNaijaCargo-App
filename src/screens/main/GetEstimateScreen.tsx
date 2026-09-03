@@ -1,35 +1,67 @@
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Switch, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ShipStackParamList } from "../../navigation/types";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { BackHeader } from "../../ui/BackHeader";
 import { Button } from "../../ui/Button";
+import { bookShipment, getEstimate, SERVICE_TIER_META, type ServiceTier } from "../../shipments/api";
 
 type Props = NativeStackScreenProps<ShipStackParamList, "GetEstimate">;
-
-const SERVICES: { key: "standard" | "express" | "priority"; name: string; eta: string; price: number; badge?: string }[] = [
-  { key: "standard", name: "Standard", eta: "5–7 business days", price: 15938 },
-  { key: "express", name: "Express", eta: "2–3 business days", price: 24704, badge: "Popular" },
-  { key: "priority", name: "Priority", eta: "Next business day", price: 35064, badge: "Fastest" },
-];
 
 function formatNaira(n: number) {
   return `₦${n.toLocaleString("en-NG")}`;
 }
 
 export function GetEstimateScreen({ navigation, route }: Props) {
-  const { senderName, pickupAddress, receiverName, deliveryAddress, cargoType, weight, dimensions } = route.params;
-  const [service, setService] = useState<(typeof SERVICES)[number]["key"]>("express");
+  const { senderName, pickupAddress, receiverName, deliveryAddress, cargoType, weightKg, dimensions } = route.params;
+  const [service, setService] = useState<ServiceTier>("express");
   const [insured, setInsured] = useState(false);
+  const [tiers, setTiers] = useState(route.params.tiers);
+  const [estimating, setEstimating] = useState(false);
+  const [booking, setBooking] = useState(false);
+  const [error, setError] = useState("");
 
-  const weightNum = parseFloat(weight) || 12.5;
-  const base = 19375;
-  const weightCharge = Math.round(weightNum * 220);
-  const fuel = 1066;
-  const insurance = insured ? 500 : 0;
-  const total = base + weightCharge + fuel + insurance;
+  const breakdown = tiers[service];
+
+  const handleInsuredChange = async (next: boolean) => {
+    setInsured(next);
+    setEstimating(true);
+    setError("");
+    try {
+      // Insurance genuinely changes the server-computed total, so re-ask
+      // the function rather than adding ₦500 on the client. Keep showing
+      // the previous numbers while this is in flight (optimistic), rather
+      // than blanking the panel.
+      const nextTiers = await getEstimate({ weightKg, insured: next });
+      setTiers(nextTiers);
+    } catch (err) {
+      setInsured(!next);
+      setError(err instanceof Error ? err.message : "Couldn't update the estimate. Please try again.");
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  const handleConfirmAndBook = async () => {
+    setError("");
+    setBooking(true);
+    try {
+      const { trackingRef } = await bookShipment({
+        sender: { name: senderName, address: pickupAddress },
+        receiver: { name: receiverName, address: deliveryAddress },
+        cargo: { type: cargoType, weightKg, dimensions },
+        serviceTier: service,
+        insured,
+      });
+      navigation.navigate("Confirmed", { trackingRef });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't book this shipment. Please try again.");
+    } finally {
+      setBooking(false);
+    }
+  };
 
   return (
     <ScreenContainer scroll>
@@ -62,7 +94,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
           </View>
           <View>
             <Text className="font-outfit-medium text-[9.5px] text-white/50">Weight</Text>
-            <Text className="font-outfit-bold text-[12px] text-white">{weightNum} kg</Text>
+            <Text className="font-outfit-bold text-[12px] text-white">{weightKg} kg</Text>
           </View>
           <View>
             <Text className="font-outfit-medium text-[9.5px] text-white/50">Dimensions</Text>
@@ -74,7 +106,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
       <View className="pt-4">
         <Text className="font-outfit-bold text-[12px] tracking-[0.48px] text-brand">SELECT SERVICE</Text>
         <View className="mt-[10px] gap-2">
-          {SERVICES.map((s) => {
+          {SERVICE_TIER_META.map((s) => {
             const active = service === s.key;
             return (
               <Pressable
@@ -104,7 +136,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
                   </View>
                   <Text className="pt-px font-outfit text-[11.5px] text-muted">{s.eta}</Text>
                 </View>
-                <Text className={`font-outfit-extrabold text-[15px] ${active ? "text-brand" : "text-body"}`}>{formatNaira(s.price)}</Text>
+                <Text className={`font-outfit-extrabold text-[15px] ${active ? "text-brand" : "text-body"}`}>{formatNaira(tiers[s.key].total)}</Text>
               </Pressable>
             );
           })}
@@ -112,18 +144,21 @@ export function GetEstimateScreen({ navigation, route }: Props) {
       </View>
 
       <View className="mt-[14px] gap-3 rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.07)] bg-surface px-[18px] py-4">
-        <Text className="font-outfit-bold text-[12px] tracking-[0.48px] text-brand">PRICE BREAKDOWN</Text>
-        <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Base rate</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(base)}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="font-outfit-bold text-[12px] tracking-[0.48px] text-brand">PRICE BREAKDOWN</Text>
+          {estimating ? <ActivityIndicator size="small" color="#1B4332" /> : null}
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Weight charge ({weightNum} kg × ₦220)</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(weightCharge)}</Text>
+          <Text className="font-outfit text-[13px] text-[#6B7280]">Base rate</Text>
+          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.base)}</Text>
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="font-outfit text-[13px] text-[#6B7280]">Weight charge ({weightKg} kg × ₦220)</Text>
+          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.weightCharge)}</Text>
         </View>
         <View className="flex-row items-center justify-between">
           <Text className="font-outfit text-[13px] text-[#6B7280]">Fuel surcharge</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(fuel)}</Text>
+          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.fuel)}</Text>
         </View>
         <View className="flex-row items-center justify-between border-t-[0.661px] border-[rgba(27,67,50,0.1)] pt-3">
           <View className="flex-row items-center gap-2">
@@ -137,7 +172,8 @@ export function GetEstimateScreen({ navigation, route }: Props) {
             <Text className="font-outfit text-[12px] text-muted">+₦500</Text>
             <Switch
               value={insured}
-              onValueChange={setInsured}
+              onValueChange={handleInsuredChange}
+              disabled={estimating}
               trackColor={{ false: "#D1D5DB", true: "#1B4332" }}
               thumbColor="#fff"
             />
@@ -145,7 +181,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
         </View>
         <View className="flex-row items-center justify-between border-t-[1.322px] border-[rgba(27,67,50,0.12)] pt-3">
           <Text className="font-outfit-bold text-[15px] text-ink">Total Estimate</Text>
-          <Text className="font-outfit-black text-[22px] text-brand">{formatNaira(total)}</Text>
+          <Text className="font-outfit-black text-[22px] text-brand">{formatNaira(breakdown.total)}</Text>
         </View>
       </View>
 
@@ -153,17 +189,20 @@ export function GetEstimateScreen({ navigation, route }: Props) {
         <Feather name="map-pin" size={20} color="#1e3a5f" />
         <View className="flex-1">
           <Text className="font-outfit-semibold text-[12px] text-[#1e3a5f]">
-            Estimated delivery: <Text className="font-outfit-black">{SERVICES.find((s) => s.key === service)?.eta}</Text>
+            Estimated delivery: <Text className="font-outfit-black">{SERVICE_TIER_META.find((s) => s.key === service)?.eta}</Text>
           </Text>
           <Text className="pt-px font-outfit text-[11px] text-muted">Pickup scheduled within 24 hours of booking</Text>
         </View>
       </View>
 
+      {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+
       <View className="pt-5">
         <Button
           label="CONFIRM & BOOK"
           icon={<Feather name="check" size={16} color="#fff" />}
-          onPress={() => navigation.navigate("Confirmed", { trackingRef: `DN-2024-${Math.floor(10000 + Math.random() * 89999)}` })}
+          onPress={handleConfirmAndBook}
+          loading={booking}
         />
         <Text className="pt-[10px] text-center font-outfit text-[11px] text-muted">
           You won't be charged until pickup is confirmed.
