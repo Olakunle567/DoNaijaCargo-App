@@ -11,6 +11,8 @@ import { Button } from "../../ui/Button";
 import { Divider } from "../../ui/Divider";
 import { GoogleIcon } from "../../ui/brand-icons/GoogleIcon";
 import { AppleIcon } from "../../ui/brand-icons/AppleIcon";
+import { GoogleAuthSheet } from "./GoogleAuthSheet";
+import { AppleAuthSheet } from "./AppleAuthSheet";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SignIn">;
 
@@ -23,6 +25,9 @@ export function SignInScreen({ navigation }: Props) {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
+
+  const [googleOpen, setGoogleOpen] = useState(false);
+  const [appleOpen, setAppleOpen] = useState(false);
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
@@ -79,8 +84,8 @@ export function SignInScreen({ navigation }: Props) {
       </View>
 
       <View className="gap-[10px]">
-        <Button label="Continue with Google" variant="white" icon={<GoogleIcon size={20} />} onPress={signIn} />
-        <Button label="Continue with Apple" variant="dark" icon={<AppleIcon size={18} />} onPress={signIn} />
+        <Button label="Continue with Google" variant="white" icon={<GoogleIcon size={20} />} onPress={() => setGoogleOpen(true)} />
+        <Button label="Continue with Apple" variant="dark" icon={<AppleIcon size={18} />} onPress={() => setAppleOpen(true)} />
       </View>
 
       <View className="flex-row items-center justify-center gap-[6px] pt-7">
@@ -124,6 +129,9 @@ export function SignInScreen({ navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <GoogleAuthSheet visible={googleOpen} onClose={() => setGoogleOpen(false)} onSuccess={() => { setGoogleOpen(false); signIn(); }} />
+      <AppleAuthSheet visible={appleOpen} onClose={() => setAppleOpen(false)} onSuccess={() => { setAppleOpen(false); signIn(); }} />
     </ScreenContainer>
   );
 }

@@ -40,3 +40,10 @@ export type RidingStackParamList = {
   RideActive: undefined;
   Chat: undefined;
 };
+
+export type AccountStackParamList = {
+  Account: undefined;
+  PaymentMethods: undefined;
+  Settings: undefined;
+  OrderHistory: undefined;
+};
