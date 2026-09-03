@@ -39,7 +39,7 @@ export type ShipStackParamList = {
 
 export type RidingStackParamList = {
   Ride: undefined;
-  RideActive: undefined;
+  RideActive: { rideId: string };
   Chat: undefined;
 };
 

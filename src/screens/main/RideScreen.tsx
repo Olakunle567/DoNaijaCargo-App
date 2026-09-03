@@ -8,6 +8,7 @@ import { MapIllustration } from "../../ui/MapIllustration";
 import { BobbingPin } from "../../ui/BobbingPin";
 import { Button } from "../../ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { requestRide, VEHICLE_RATE_PREVIEW } from "../../rides/api";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "Ride">;
 
@@ -30,14 +31,25 @@ export function RideScreen({ navigation }: Props) {
   const [pickup, setPickup] = useState("15 Adeola Odeku St, VI");
   const [destination, setDestination] = useState("");
   const [error, setError] = useState("");
+  const [requesting, setRequesting] = useState(false);
 
-  const handleRequest = () => {
+  const preview = VEHICLE_RATE_PREVIEW[vehicle];
+
+  const handleRequest = async () => {
     if (!destination.trim()) {
       setError("Enter a delivery destination.");
       return;
     }
     setError("");
-    navigation.navigate("RideActive");
+    setRequesting(true);
+    try {
+      const { id } = await requestRide({ pickup: pickup.trim(), dropoff: destination.trim(), vehicleType: vehicle });
+      navigation.navigate("RideActive", { rideId: id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't request a rider. Please try again.");
+    } finally {
+      setRequesting(false);
+    }
   };
 
   return (
@@ -115,16 +127,16 @@ export function RideScreen({ navigation }: Props) {
         <View className="mt-[14px] flex-row items-center justify-between rounded-xl border-[0.661px] border-[rgba(27,67,50,0.07)] bg-surface px-[14px] py-3">
           <View>
             <Text className="font-outfit-semibold text-[10px] tracking-[0.4px] text-muted">PRICE ESTIMATE</Text>
-            <Text className="font-outfit-extrabold text-[20px] text-ink">₦3,900</Text>
+            <Text className="font-outfit-extrabold text-[20px] text-ink">₦{preview.priceEstimate.toLocaleString("en-NG")}</Text>
           </View>
           <View className="items-end">
             <Text className="font-outfit-semibold text-[10px] tracking-[0.4px] text-muted">ETA</Text>
-            <Text className="font-outfit-bold text-[16px] text-brand">~12 min</Text>
+            <Text className="font-outfit-bold text-[16px] text-brand">~{preview.etaMin} min</Text>
           </View>
         </View>
 
         <View className="pt-[14px]">
-          <Button label="REQUEST RIDER" onPress={handleRequest} />
+          <Button label="REQUEST RIDER" onPress={handleRequest} loading={requesting} />
         </View>
       </View>
     </View>

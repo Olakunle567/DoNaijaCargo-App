@@ -8,6 +8,8 @@ import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
+import { useWallet } from "../../wallet/useWallet";
+import { topUpWallet } from "../../wallet/api";
 
 const STATS = [
   { label: "Shipments", value: "24" },
@@ -34,9 +36,11 @@ export function AccountScreen() {
   const [draftProfile, setDraftProfile] = useState(profile);
   const [editOpen, setEditOpen] = useState(false);
 
-  const [balance, setBalance] = useState(36650);
+  const { wallet } = useWallet();
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
+  const [toppingUp, setToppingUp] = useState(false);
+  const [topUpError, setTopUpError] = useState("");
 
   const openEdit = () => {
     setDraftProfile(profile);
@@ -64,12 +68,25 @@ export function AccountScreen() {
     }
   };
 
-  const handleTopUp = () => {
+  const closeTopUp = () => {
+    setTopUpOpen(false);
+    setTopUpAmount("");
+    setTopUpError("");
+  };
+
+  const handleTopUp = async () => {
     const amount = parseInt(topUpAmount, 10);
     if (!amount || amount <= 0) return;
-    setBalance((b) => b + amount);
-    setTopUpAmount("");
-    setTopUpOpen(false);
+    setTopUpError("");
+    setToppingUp(true);
+    try {
+      await topUpWallet({ amount });
+      closeTopUp();
+    } catch (err) {
+      setTopUpError(err instanceof Error ? err.message : "Couldn't add funds. Please try again.");
+    } finally {
+      setToppingUp(false);
+    }
   };
 
   return (
@@ -117,8 +134,12 @@ export function AccountScreen() {
                 <MaterialCommunityIcons name="wallet-outline" size={20} color="#fff" />
                 <Text className="font-outfit-semibold text-[12px] tracking-[0.72px] text-white/75">D.O NAIJA WALLET</Text>
               </View>
-              <Text className="pt-[6px] font-outfit-black text-[26px] tracking-[-0.26px] text-white">{formatNaira(balance)}</Text>
-              <Text className="pt-1 font-outfit text-[11px] text-white/55">Available balance · WLT-4482</Text>
+              <Text className="pt-[6px] font-outfit-black text-[26px] tracking-[-0.26px] text-white">
+                {wallet ? formatNaira(wallet.balance) : "···"}
+              </Text>
+              <Text className="pt-1 font-outfit text-[11px] text-white/55">
+                Available balance{wallet ? ` · ${wallet.walletId}` : ""}
+              </Text>
             </View>
             <Pressable onPress={() => setTopUpOpen(true)} className="items-end gap-2">
               <View className="rounded-[10px] bg-white/15 px-[14px] py-[7px]">
@@ -176,17 +197,20 @@ export function AccountScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={topUpOpen} transparent animationType="fade" onRequestClose={() => setTopUpOpen(false)}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setTopUpOpen(false)}>
+      <Modal visible={topUpOpen} transparent animationType="fade" onRequestClose={closeTopUp}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={closeTopUp}>
           <Pressable className="gap-3 rounded-t-3xl bg-white px-[18px] pb-8 pt-5" onPress={(e) => e.stopPropagation()}>
             <View className="items-center pb-1">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
             <Text className="font-outfit-extrabold text-[17px] text-ink">Top Up Wallet</Text>
-            <Text className="font-outfit text-[13px] text-muted">Current balance: {formatNaira(balance)}</Text>
+            <Text className="font-outfit text-[13px] text-muted">
+              Current balance: {wallet ? formatNaira(wallet.balance) : "···"}
+            </Text>
             <TextField icon="credit-card" placeholder="Amount (₦)" value={topUpAmount} onChangeText={setTopUpAmount} keyboardType="number-pad" />
+            {topUpError ? <Text className="font-outfit-semibold text-[12px] text-[#DC2626]">{topUpError}</Text> : null}
             <View className="pt-2">
-              <Button label="Add Funds" onPress={handleTopUp} disabled={!topUpAmount.trim()} />
+              <Button label="Add Funds" onPress={handleTopUp} disabled={!topUpAmount.trim()} loading={toppingUp} />
             </View>
           </Pressable>
         </Pressable>

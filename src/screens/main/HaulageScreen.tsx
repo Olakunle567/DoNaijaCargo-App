@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "../../navigation/types";
 import { ScreenContainer } from "../../ui/ScreenContainer";
@@ -8,6 +9,7 @@ import { BackHeader } from "../../ui/BackHeader";
 import { TextField } from "../../ui/TextField";
 import { SectionLabel } from "../../ui/SectionLabel";
 import { Button } from "../../ui/Button";
+import { submitHaulage } from "../../haulage/api";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "Haulage">;
 
@@ -28,20 +30,48 @@ export function HaulageScreen({ navigation }: Props) {
   const [description, setDescription] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const toastOpacity = useSharedValue(0);
+  const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
 
-  const handleRequest = () => {
+  const handleRequest = async () => {
     if (!pickup.trim() || !delivery.trim() || !description.trim()) {
       setError("Please fill in pickup, delivery, and cargo description.");
       return;
     }
     setError("");
-    setSent(true);
+    setSubmitting(true);
+    try {
+      await submitHaulage({
+        truckType,
+        pickup: pickup.trim(),
+        dropoff: delivery.trim(),
+        description: description.trim(),
+        weightRange,
+        preferredDate: pickupDate.trim(),
+      });
+      toastOpacity.value = withTiming(1, { duration: 200 });
+      setTimeout(() => navigation.goBack(), 1400);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't submit this request. Please try again.");
+      setSubmitting(false);
+    }
   };
 
   return (
     <ScreenContainer scroll>
       <BackHeader title="Book Haulage" subtitle="Heavy cargo & bulk freight services" onBack={() => navigation.goBack()} />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[{ position: "absolute", top: 8, left: 16, right: 16, zIndex: 50 }, toastStyle]}
+        className="flex-row items-center gap-2 rounded-2xl bg-brand px-4 py-3 shadow-lg"
+      >
+        <Feather name="check-circle" size={18} color="#fff" />
+        <Text className="flex-1 font-outfit-semibold text-[12.5px] text-white">
+          Request sent — a consultant will call within 2 hours.
+        </Text>
+      </Animated.View>
 
       <View className="pt-5">
         <Text className="font-outfit-bold text-[12px] tracking-[0.48px] text-brand">TRUCK TYPE</Text>
@@ -120,31 +150,8 @@ export function HaulageScreen({ navigation }: Props) {
       {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
 
       <View className="py-5">
-        <Button label="REQUEST HAULAGE" onPress={handleRequest} />
+        <Button label="REQUEST HAULAGE" onPress={handleRequest} loading={submitting} />
       </View>
-
-      <Modal visible={sent} transparent animationType="fade">
-        <View className="flex-1 items-center justify-center bg-black/50 px-8">
-          <View className="w-full items-center rounded-3xl bg-white px-6 py-8">
-            <View className="mb-4 size-16 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
-              <Feather name="check" size={28} color="#1B4332" />
-            </View>
-            <Text className="pb-2 text-center font-outfit-extrabold text-[19px] text-ink">Request Sent!</Text>
-            <Text className="pb-6 text-center font-outfit text-[13px] leading-[19.5px] text-muted">
-              A haulage consultant will call you within 2 hours to confirm pricing and logistics.
-            </Text>
-            <View className="w-full">
-              <Button
-                label="Back to Home"
-                onPress={() => {
-                  setSent(false);
-                  navigation.goBack();
-                }}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScreenContainer>
   );
 }

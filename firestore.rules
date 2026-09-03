@@ -33,10 +33,6 @@ service cloud.firestore {
       return ['trackingRef', 'priceBreakdown', 'total', 'status'];
     }
 
-    function orderReadonlyFields() {
-      return ['total'];
-    }
-
     // ---------------------------------------------------------------------
     // users/{uid} — profile. Doc id is the uid, so ownership is the path
     // segment itself; no ownerUid field needed.
@@ -102,54 +98,35 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // rides/{id} — no fields are function-only per spec, so the owner can
-    // freely create/update their own ride (e.g. to set status:'cancelled').
+    // rides/{id} — fully server-driven: requestRide creates it, the mocked
+    // matching trigger assigns a rider, cancelRide cancels it. A client
+    // could otherwise fabricate a cheap 'matched' ride or skip the
+    // cancellation fee, so there's no client write path at all here.
     // ---------------------------------------------------------------------
     match /rides/{rideId} {
       allow read: if isOwnerOf(resource.data);
-
-      allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
-
-      allow update: if isOwnerOf(resource.data)
-        && noneOf(['ownerUid']);
-
-      allow delete: if false;
+      allow write: if false;
     }
 
     // ---------------------------------------------------------------------
-    // haulageRequests/{id} — quote requests. Nothing on this collection is
-    // called out as function-written, so status ('requested'|'contacted')
-    // is left client-writable; lock it down here if ops staff, not the
-    // client, should be the one flipping it to 'contacted'.
+    // haulageRequests/{id} — quote requests, created by submitHaulage.
+    // Same reasoning as rides: once ops staff (not the client) is what
+    // flips status to 'contacted', that has to go through trusted backend
+    // code, so writes are closed here too.
     // ---------------------------------------------------------------------
     match /haulageRequests/{requestId} {
       allow read: if isOwnerOf(resource.data);
-
-      allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
-
-      allow update: if isOwnerOf(resource.data)
-        && noneOf(['ownerUid']);
-
-      allow delete: if false;
+      allow write: if false;
     }
 
     // ---------------------------------------------------------------------
-    // orders/{id}
+    // orders/{id} — fully server-driven: placeOrder is the only writer (it
+    // prices against `products`, debits the wallet, and clears the cart
+    // atomically), so there's no valid client write path here either.
     // ---------------------------------------------------------------------
     match /orders/{orderId} {
       allow read: if isOwnerOf(resource.data);
-
-      allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid
-        && keysExclude(request.resource.data, orderReadonlyFields());
-
-      allow update: if isOwnerOf(resource.data)
-        && noneOf(['ownerUid'])
-        && noneOf(orderReadonlyFields());
-
-      allow delete: if false;
+      allow write: if false;
     }
 
     // Default deny for anything not modeled above.

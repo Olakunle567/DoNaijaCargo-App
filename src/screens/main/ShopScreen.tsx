@@ -6,55 +6,85 @@ import type { HomeStackParamList } from "../../navigation/types";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
-import { useOrders } from "../../orders/OrdersContext";
+import { useProducts, type Product } from "../../shop/useProducts";
+import { useCart } from "../../shop/useCart";
+import { placeOrder } from "../../shop/api";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "Shop">;
 
 const CATEGORIES = ["All", "Electronics", "Fashion", "Food", "Home", "Books", "Beauty"];
 
-const PRODUCTS = [
-  { name: "Wireless Earbuds Pro", category: "Electronics", emoji: "🎧", bg: "bg-[rgba(30,58,95,0.09)]", rating: 4.7, reviews: 128, price: 18500, badge: "Top Seller", badgeColor: "bg-brand" },
-  { name: "Agbada Ensemble Set", category: "Fashion", emoji: "👘", bg: "bg-[rgba(27,67,50,0.09)]", rating: 4.5, reviews: 43, price: 12000, badge: "New", badgeColor: "bg-[#1e3a5f]" },
-  { name: "Zobo & Spice Pack", category: "Food", emoji: "🌿", bg: "bg-[rgba(124,45,18,0.09)]", rating: 4.8, reviews: 89, price: 3500 },
-  { name: "Smart LED Desk Lamp", category: "Home", emoji: "💡", bg: "bg-[rgba(55,65,81,0.09)]", rating: 4.4, reviews: 62, price: 8900, badge: "Sale", badgeColor: "bg-[#dc2626]" },
-  { name: "Ankara Print Sneakers", category: "Fashion", emoji: "👟", bg: "bg-[rgba(6,95,70,0.09)]", rating: 4.6, reviews: 201, price: 15000, badge: "Popular", badgeColor: "bg-brand" },
-  { name: "Portable Power Bank", category: "Electronics", emoji: "🔋", bg: "bg-[rgba(30,58,95,0.09)]", rating: 4.3, reviews: 77, price: 22000 },
-  { name: "Nigerian Recipe Book", category: "Books", emoji: "📗", bg: "bg-[rgba(146,64,14,0.09)]", rating: 4.9, reviews: 35, price: 4500, badge: "New", badgeColor: "bg-[#1e3a5f]" },
-  { name: "Shea Butter Cream Set", category: "Beauty", emoji: "🧴", bg: "bg-[rgba(91,33,182,0.09)]", rating: 4.7, reviews: 154, price: 6800 },
-];
+// Decorative only — not stored on the product doc. One tint per category
+// (the original mock varied this per item; that fidelity was dropped rather
+// than adding a styling field to the Firestore schema for it).
+const CATEGORY_BG: Record<string, string> = {
+  Electronics: "bg-[rgba(30,58,95,0.09)]",
+  Fashion: "bg-[rgba(27,67,50,0.09)]",
+  Food: "bg-[rgba(124,45,18,0.09)]",
+  Home: "bg-[rgba(55,65,81,0.09)]",
+  Books: "bg-[rgba(146,64,14,0.09)]",
+  Beauty: "bg-[rgba(91,33,182,0.09)]",
+};
+
+const BADGE_COLOR: Record<string, string> = {
+  "Top Seller": "bg-brand",
+  New: "bg-[#1e3a5f]",
+  Sale: "bg-[#dc2626]",
+  Popular: "bg-brand",
+};
 
 function formatNaira(n: number) {
   return `₦${n.toLocaleString("en-NG")}`;
 }
 
+function ProductCardSkeleton() {
+  return (
+    <View className="w-[47.5%] overflow-hidden rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.07)] bg-white">
+      <View className="h-[110px] bg-surface" />
+      <View className="gap-2 px-3 pb-3 pt-[10px]">
+        <View className="h-[13px] w-3/4 rounded-full bg-surface" />
+        <View className="h-[10px] w-1/2 rounded-full bg-surface" />
+        <View className="h-5 w-2/3 rounded-full bg-surface" />
+      </View>
+    </View>
+  );
+}
+
 export function ShopScreen({ navigation }: Props) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [cart, setCart] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkedOut, setCheckedOut] = useState(false);
-  const { addOrder } = useOrders();
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const { products, loading: productsLoading } = useProducts();
+  const cart = useCart();
 
-  const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  const cartTotal = PRODUCTS.filter((p) => cart[p.name]).reduce((sum, p) => sum + p.price * cart[p.name], 0);
-
-  const addToCart = (name: string) => {
-    setCart((prev) => ({ ...prev, [name]: (prev[name] ?? 0) + 1 }));
-  };
+  const cartProducts = cart.items
+    .map((item) => ({ item, product: products.find((p) => p.id === item.productId) }))
+    .filter((entry): entry is { item: (typeof cart.items)[number]; product: Product } => !!entry.product);
+  const cartTotal = cartProducts.reduce((sum, { item, product }) => sum + product.price * item.qty, 0);
 
   const closeCart = () => {
     setCartOpen(false);
     setCheckedOut(false);
+    setCheckoutError("");
   };
 
-  const handleCheckout = () => {
-    const items = PRODUCTS.filter((p) => cart[p.name]).map((p) => ({ name: p.name, emoji: p.emoji, qty: cart[p.name], price: p.price }));
-    addOrder(items, cartTotal);
-    setCart({});
-    setCheckedOut(true);
+  const handleCheckout = async () => {
+    setCheckoutError("");
+    setCheckingOut(true);
+    try {
+      await placeOrder();
+      setCheckedOut(true);
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Couldn't place this order. Please try again.");
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
-  const filtered = PRODUCTS.filter((p) => {
+  const filtered = products.filter((p) => {
     const matchesCategory = category === "All" || p.category === category;
     const matchesSearch = !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase());
     return matchesCategory && matchesSearch;
@@ -77,9 +107,9 @@ export function ShopScreen({ navigation }: Props) {
         </View>
         <Pressable onPress={() => setCartOpen(true)} hitSlop={8} testID="cart-button">
           <Feather name="shopping-cart" size={22} color="#111827" />
-          {cartCount > 0 ? (
+          {cart.count > 0 ? (
             <View className="absolute -right-2 -top-2 size-4 items-center justify-center rounded-full border-2 border-white bg-brand">
-              <Text className="font-outfit-bold text-[9px] text-white">{cartCount}</Text>
+              <Text className="font-outfit-bold text-[9px] text-white">{cart.count}</Text>
             </View>
           ) : null}
         </Pressable>
@@ -118,40 +148,55 @@ export function ShopScreen({ navigation }: Props) {
         <Text className="font-outfit text-[11px] text-muted">{filtered.length} items</Text>
       </View>
 
-      {filtered.length === 0 ? (
-        <Text className="pt-8 text-center font-outfit text-[13px] text-muted">No products match your search.</Text>
-      ) : null}
+      {productsLoading ? (
+        <View className="mt-3 flex-row flex-wrap gap-3">
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+        </View>
+      ) : (
+        <>
+          {filtered.length === 0 ? (
+            <Text className="pt-8 text-center font-outfit text-[13px] text-muted">No products match your search.</Text>
+          ) : null}
 
-      <View className="mt-3 flex-row flex-wrap gap-3">
-        {filtered.map((p) => (
-          <View key={p.name} className="w-[47.5%] overflow-hidden rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.07)] bg-white">
-            <View className={`h-[110px] items-center justify-center ${p.bg}`}>
-              <Text className="text-[48px]">{p.emoji}</Text>
-              {p.badge ? (
-                <View className={`absolute left-2 top-2 rounded-md px-[7px] py-[2px] ${p.badgeColor}`}>
-                  <Text className="font-outfit-bold text-[9px] tracking-[0.36px] text-white">{p.badge}</Text>
+          <View className="mt-3 flex-row flex-wrap gap-3">
+            {filtered.map((p) => (
+              <View key={p.id} className="w-[47.5%] overflow-hidden rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.07)] bg-white">
+                <View className={`h-[110px] items-center justify-center ${CATEGORY_BG[p.category] ?? "bg-surface"}`}>
+                  <Text className="text-[48px]">{p.emoji}</Text>
+                  {p.badge ? (
+                    <View className={`absolute left-2 top-2 rounded-md px-[7px] py-[2px] ${BADGE_COLOR[p.badge] ?? "bg-brand"}`}>
+                      <Text className="font-outfit-bold text-[9px] tracking-[0.36px] text-white">{p.badge}</Text>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
-            </View>
-            <View className="gap-1 px-3 pb-3 pt-[10px]">
-              <Text className="font-outfit-bold text-[12.5px] text-ink" numberOfLines={1}>
-                {p.name}
-              </Text>
-              <View className="flex-row items-center gap-1">
-                <Feather name="star" size={11} color="#F59E0B" />
-                <Text className="font-outfit-semibold text-[10.5px] text-body">{p.rating}</Text>
-                <Text className="font-outfit text-[10px] text-muted">({p.reviews})</Text>
+                <View className="gap-1 px-3 pb-3 pt-[10px]">
+                  <Text className="font-outfit-bold text-[12.5px] text-ink" numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <View className="flex-row items-center gap-1">
+                    <Feather name="star" size={11} color="#F59E0B" />
+                    <Text className="font-outfit-semibold text-[10.5px] text-body">{p.rating}</Text>
+                    <Text className="font-outfit text-[10px] text-muted">({p.ratingCount})</Text>
+                  </View>
+                  <View className="flex-row items-center justify-between pt-2">
+                    <Text className="font-outfit-extrabold text-[14px] text-brand">{formatNaira(p.price)}</Text>
+                    <Pressable
+                      onPress={() => cart.addToCart(p.id)}
+                      className="size-[30px] items-center justify-center rounded-full bg-brand"
+                      testID={`add-to-cart-${p.name}`}
+                    >
+                      <Feather name="plus" size={14} color="#fff" />
+                    </Pressable>
+                  </View>
+                </View>
               </View>
-              <View className="flex-row items-center justify-between pt-2">
-                <Text className="font-outfit-extrabold text-[14px] text-brand">{formatNaira(p.price)}</Text>
-                <Pressable onPress={() => addToCart(p.name)} className="size-[30px] items-center justify-center rounded-full bg-brand" testID={`add-to-cart-${p.name}`}>
-                  <Feather name="plus" size={14} color="#fff" />
-                </Pressable>
-              </View>
-            </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
 
       <Modal visible={cartOpen} transparent animationType="fade" onRequestClose={closeCart}>
         <Pressable className="flex-1 justify-end bg-black/50" onPress={closeCart}>
@@ -175,30 +220,38 @@ export function ShopScreen({ navigation }: Props) {
             ) : (
               <>
                 <Text className="pb-4 font-outfit-extrabold text-[17px] text-ink">Your Cart</Text>
-                {cartCount === 0 ? (
+                {cartProducts.length === 0 ? (
                   <Text className="pb-4 font-outfit text-[13px] text-muted">Your cart is empty. Add something from the Shop.</Text>
                 ) : (
                   <>
-                    {PRODUCTS.filter((p) => cart[p.name]).map((p) => (
-                      <View key={p.name} className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-3">
+                    {cartProducts.map(({ item, product }) => (
+                      <View key={product.id} className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-3">
                         <View className="flex-row items-center gap-3">
-                          <View className={`size-11 items-center justify-center rounded-xl ${p.bg}`}>
-                            <Text className="text-[20px]">{p.emoji}</Text>
+                          <View className={`size-11 items-center justify-center rounded-xl ${CATEGORY_BG[product.category] ?? "bg-surface"}`}>
+                            <Text className="text-[20px]">{product.emoji}</Text>
                           </View>
                           <View>
-                            <Text className="font-outfit-semibold text-[13px] text-ink">{p.name}</Text>
-                            <Text className="font-outfit text-[11px] text-muted">Qty {cart[p.name]} · {formatNaira(p.price)} each</Text>
+                            <Text className="font-outfit-semibold text-[13px] text-ink">{product.name}</Text>
+                            <Text className="font-outfit text-[11px] text-muted">Qty {item.qty} · {formatNaira(product.price)} each</Text>
                           </View>
                         </View>
-                        <Text className="font-outfit-bold text-[13px] text-brand">{formatNaira(p.price * cart[p.name])}</Text>
+                        <View className="flex-row items-center gap-3">
+                          <Text className="font-outfit-bold text-[13px] text-brand">{formatNaira(product.price * item.qty)}</Text>
+                          <Pressable onPress={() => cart.removeFromCart(product.id)} hitSlop={8} testID={`remove-from-cart-${product.id}`}>
+                            <Feather name="x" size={16} color="#9CA3AF" />
+                          </Pressable>
+                        </View>
                       </View>
                     ))}
                     <View className="flex-row items-center justify-between pt-4">
                       <Text className="font-outfit-bold text-[15px] text-ink">Total</Text>
                       <Text className="font-outfit-black text-[20px] text-brand">{formatNaira(cartTotal)}</Text>
                     </View>
+                    {checkoutError ? (
+                      <Text className="pt-3 text-center font-outfit-semibold text-[12px] text-[#DC2626]">{checkoutError}</Text>
+                    ) : null}
                     <View className="pt-4">
-                      <Button label="CHECKOUT" onPress={handleCheckout} />
+                      <Button label="CHECKOUT" onPress={handleCheckout} loading={checkingOut} />
                     </View>
                   </>
                 )}
