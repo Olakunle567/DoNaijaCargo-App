@@ -26,11 +26,25 @@ const SHIPMENTS = [
   { id: "DN-2024-08541", date: "Sept 4, 2024", status: "Delivered", from: "Kaduna", to: "Lagos", category: "General Goods", weight: "5.7 kg" },
 ];
 
-const FILTERS = ["All", "Active", "Completed", "Cancelled"];
+const FILTERS = ["All", "Active", "Completed", "Cancelled"] as const;
+const ACTIVE_STATUSES = ["In Transit", "At Sorting Centre", "Pending Pickup"];
 
 export function MyShipmentsScreen({ navigation }: Props) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
+
+  const filtered = SHIPMENTS.filter((s) => {
+    const matchesFilter =
+      filter === "All" ||
+      (filter === "Active" && ACTIVE_STATUSES.includes(s.status)) ||
+      (filter === "Completed" && s.status === "Delivered") ||
+      (filter === "Cancelled" && s.status === "Cancelled");
+    if (!matchesFilter) return false;
+
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return s.id.toLowerCase().includes(q) || s.from.toLowerCase().includes(q) || s.to.toLowerCase().includes(q);
+  });
 
   return (
     <ScreenContainer scroll>
@@ -56,10 +70,17 @@ export function MyShipmentsScreen({ navigation }: Props) {
       </ScrollView>
 
       <View className="mt-4 gap-3">
-        {SHIPMENTS.map((s) => {
+        {filtered.length === 0 ? (
+          <Text className="pt-8 text-center font-outfit text-[13px] text-muted">No shipments match your search.</Text>
+        ) : null}
+        {filtered.map((s) => {
           const style = STATUS_STYLES[s.status];
           return (
-            <Pressable key={s.id} className="rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.08)] bg-white px-4 py-[15px]">
+            <Pressable
+              key={s.id}
+              onPress={() => navigation.getParent()?.navigate("TrackingTab")}
+              className="rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.08)] bg-white px-4 py-[15px]"
+            >
               <View className="flex-row items-start justify-between">
                 <View>
                   <Text className="font-outfit-medium text-[11px] text-muted">{s.date}</Text>

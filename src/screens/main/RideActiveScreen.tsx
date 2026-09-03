@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Linking, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -9,12 +9,24 @@ import { MapIllustration } from "../../ui/MapIllustration";
 import { PulsingMarker } from "../../ui/PulsingMarker";
 import { Button } from "../../ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useChat } from "../../chat/ChatContext";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "RideActive">;
+
+const RIDER_PHONE = "+2348012345678";
 
 export function RideActiveScreen({ navigation }: Props) {
   const [sheet, setSheet] = useState<"none" | "contact" | "cancel">("none");
   const [message, setMessage] = useState("");
+  const { unreadCount, sendMessage } = useChat();
+
+  const handleQuickSend = () => {
+    if (!message.trim()) return;
+    sendMessage(message);
+    setMessage("");
+    setSheet("none");
+    navigation.navigate("Chat");
+  };
 
   const leftPct = useSharedValue(78);
   const topPct = useSharedValue(10);
@@ -106,7 +118,14 @@ export function RideActiveScreen({ navigation }: Props) {
             onPress={() => setSheet("contact")}
             className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl border-[1.322px] border-border-brand bg-surface py-[13px]"
           >
-            <Feather name="phone" size={16} color="#1B4332" />
+            <View>
+              <Feather name="phone" size={16} color="#1B4332" />
+              {unreadCount > 0 ? (
+                <View className="absolute -right-2 -top-2 size-4 items-center justify-center rounded-full bg-[#DC2626]">
+                  <Text className="font-outfit-bold text-[9px] text-white">{unreadCount}</Text>
+                </View>
+              ) : null}
+            </View>
             <Text className="font-outfit-bold text-[13px] text-brand">Contact</Text>
           </Pressable>
           <Pressable
@@ -137,15 +156,36 @@ export function RideActiveScreen({ navigation }: Props) {
                   </View>
                 </View>
                 <View className="flex-row gap-3 pb-4">
-                  <View className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3">
+                  <Pressable
+                    onPress={() => Linking.openURL(`tel:${RIDER_PHONE}`)}
+                    className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3"
+                  >
                     <Feather name="phone" size={16} color="#1B4332" />
                     <Text className="font-outfit-bold text-[13px] text-brand">Call Rider</Text>
-                  </View>
-                  <View className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3">
+                  </Pressable>
+                  <Pressable
+                    onPress={() => Linking.openURL(`https://wa.me/${RIDER_PHONE.replace("+", "")}`)}
+                    className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3"
+                  >
                     <Feather name="message-circle" size={16} color="#1B4332" />
                     <Text className="font-outfit-bold text-[13px] text-brand">WhatsApp</Text>
-                  </View>
+                  </Pressable>
                 </View>
+                <Pressable
+                  onPress={() => {
+                    setSheet("none");
+                    navigation.navigate("Chat");
+                  }}
+                  className="mb-3 flex-row items-center justify-center gap-2 rounded-2xl bg-[#EEF1EF] py-3"
+                >
+                  <Feather name="message-square" size={16} color="#1B4332" />
+                  <Text className="font-outfit-bold text-[13px] text-brand">Open Chat</Text>
+                  {unreadCount > 0 ? (
+                    <View className="ml-1 rounded-full bg-brand px-[7px] py-[1px]">
+                      <Text className="font-outfit-bold text-[10px] text-white">{unreadCount} new</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
                 <View className="flex-row items-center gap-2 rounded-2xl border-[1.322px] border-border-brand bg-surface px-4 py-2">
                   <TextInput
                     className="flex-1 font-outfit text-[13px] text-ink"
@@ -153,8 +193,10 @@ export function RideActiveScreen({ navigation }: Props) {
                     placeholderTextColor="#99A1AF"
                     value={message}
                     onChangeText={setMessage}
+                    onSubmitEditing={handleQuickSend}
+                    returnKeyType="send"
                   />
-                  <Pressable className="rounded-lg bg-brand px-4 py-2">
+                  <Pressable onPress={handleQuickSend} className="rounded-lg bg-brand px-4 py-2">
                     <Text className="font-outfit-bold text-[12px] text-white">Send</Text>
                   </Pressable>
                 </View>

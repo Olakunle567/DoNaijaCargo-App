@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -19,12 +20,25 @@ export function SignInScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
 
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+
+  const canSubmit = email.trim().length > 0 && password.length > 0;
+
   const handleSignIn = () => {
+    if (!canSubmit) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       signIn();
     }, 900);
+  };
+
+  const closeForgot = () => {
+    setForgotOpen(false);
+    setResetSent(false);
+    setResetEmail("");
   };
 
   return (
@@ -52,12 +66,12 @@ export function SignInScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Pressable className="items-end py-3">
+      <Pressable className="items-end py-3" onPress={() => setForgotOpen(true)}>
         <Text className="font-outfit-semibold text-[12.5px] text-brand">Forgot Password?</Text>
       </Pressable>
 
       <View className="pt-3">
-        <Button label="Sign In" onPress={handleSignIn} loading={loading} />
+        <Button label="Sign In" onPress={handleSignIn} loading={loading} disabled={!canSubmit} />
       </View>
 
       <View className="py-6">
@@ -75,6 +89,41 @@ export function SignInScreen({ navigation }: Props) {
           <Text className="font-outfit-bold text-[13px] text-brand">Sign Up</Text>
         </Pressable>
       </View>
+
+      <Modal visible={forgotOpen} transparent animationType="fade" onRequestClose={closeForgot}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={closeForgot}>
+          <Pressable className="rounded-t-3xl bg-white px-[18px] pb-8 pt-5" onPress={(e) => e.stopPropagation()}>
+            <View className="items-center pb-4">
+              <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
+            </View>
+            {resetSent ? (
+              <View className="items-center py-2">
+                <View className="mb-3 size-14 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
+                  <Feather name="check" size={24} color="#1B4332" />
+                </View>
+                <Text className="pb-1 font-outfit-extrabold text-[17px] text-ink">Check your email</Text>
+                <Text className="pb-5 text-center font-outfit text-[13px] text-muted">
+                  If an account exists for {resetEmail || "that address"}, a reset link is on its way.
+                </Text>
+                <View className="w-full">
+                  <Button label="Done" onPress={closeForgot} />
+                </View>
+              </View>
+            ) : (
+              <>
+                <Text className="pb-1 font-outfit-extrabold text-[17px] text-ink">Reset your password</Text>
+                <Text className="pb-4 font-outfit text-[13px] text-muted">
+                  Enter the email on your account and we'll send a reset link.
+                </Text>
+                <TextField icon="mail" placeholder="you@example.com" value={resetEmail} onChangeText={setResetEmail} keyboardType="email-address" />
+                <View className="pt-4">
+                  <Button label="Send Reset Link" onPress={() => setResetSent(true)} disabled={!resetEmail.trim()} />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }

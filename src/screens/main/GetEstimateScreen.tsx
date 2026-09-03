@@ -19,12 +19,14 @@ function formatNaira(n: number) {
   return `₦${n.toLocaleString("en-NG")}`;
 }
 
-export function GetEstimateScreen({ navigation }: Props) {
+export function GetEstimateScreen({ navigation, route }: Props) {
+  const { senderName, pickupAddress, receiverName, deliveryAddress, cargoType, weight, dimensions } = route.params;
   const [service, setService] = useState<(typeof SERVICES)[number]["key"]>("express");
   const [insured, setInsured] = useState(false);
 
+  const weightNum = parseFloat(weight) || 12.5;
   const base = 19375;
-  const weightCharge = 4263;
+  const weightCharge = Math.round(weightNum * 220);
   const fuel = 1066;
   const insurance = insured ? 500 : 0;
   const total = base + weightCharge + fuel + insurance;
@@ -39,8 +41,8 @@ export function GetEstimateScreen({ navigation }: Props) {
         <View className="flex-row gap-3 pt-[10px]">
           <View className="flex-1">
             <Text className="text-[10px] text-white/55">FROM</Text>
-            <Text className="pt-[2px] font-outfit-bold text-[13px] text-white">Sender</Text>
-            <Text className="font-outfit text-[11px] text-white/65">Lagos, Nigeria</Text>
+            <Text className="pt-[2px] font-outfit-bold text-[13px] text-white" numberOfLines={1}>{senderName}</Text>
+            <Text className="font-outfit text-[11px] text-white/65" numberOfLines={1}>{pickupAddress}</Text>
           </View>
           <View className="items-center justify-center pt-[6px]">
             <View className="size-7 items-center justify-center rounded-full bg-white/15">
@@ -49,22 +51,22 @@ export function GetEstimateScreen({ navigation }: Props) {
           </View>
           <View className="flex-1">
             <Text className="text-[10px] text-white/55">TO</Text>
-            <Text className="pt-[2px] font-outfit-bold text-[13px] text-white">Receiver</Text>
-            <Text className="font-outfit text-[11px] text-white/65">Abuja, Nigeria</Text>
+            <Text className="pt-[2px] font-outfit-bold text-[13px] text-white" numberOfLines={1}>{receiverName}</Text>
+            <Text className="font-outfit text-[11px] text-white/65" numberOfLines={1}>{deliveryAddress}</Text>
           </View>
         </View>
         <View className="flex-row gap-4 border-t-[0.661px] border-white/15 pt-[10px] mt-3">
           <View>
             <Text className="font-outfit-medium text-[9.5px] text-white/50">Type</Text>
-            <Text className="font-outfit-bold text-[12px] text-white">General Goods</Text>
+            <Text className="font-outfit-bold text-[12px] text-white">{cargoType}</Text>
           </View>
           <View>
             <Text className="font-outfit-medium text-[9.5px] text-white/50">Weight</Text>
-            <Text className="font-outfit-bold text-[12px] text-white">12.5 kg</Text>
+            <Text className="font-outfit-bold text-[12px] text-white">{weightNum} kg</Text>
           </View>
           <View>
             <Text className="font-outfit-medium text-[9.5px] text-white/50">Dimensions</Text>
-            <Text className="font-outfit-bold text-[12px] text-white">—</Text>
+            <Text className="font-outfit-bold text-[12px] text-white">{dimensions}</Text>
           </View>
         </View>
       </View>
@@ -116,7 +118,7 @@ export function GetEstimateScreen({ navigation }: Props) {
           <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(base)}</Text>
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Weight charge (12.5 kg × ₦220)</Text>
+          <Text className="font-outfit text-[13px] text-[#6B7280]">Weight charge ({weightNum} kg × ₦220)</Text>
           <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(weightCharge)}</Text>
         </View>
         <View className="flex-row items-center justify-between">

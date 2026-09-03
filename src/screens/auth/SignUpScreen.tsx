@@ -17,9 +17,23 @@ export function SignUpScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { signIn } = useAuth();
 
   const handleCreateAccount = () => {
+    if (!fullName.trim() || !email.trim() || !phone.trim() || !password || !confirmPassword) {
+      setError("Please fill in every field.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
+    setError("");
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -74,6 +88,8 @@ export function SignUpScreen({ navigation }: Props) {
           <Text className="font-outfit-bold text-brand">Privacy Policy</Text>.
         </Text>
       </View>
+
+      {error ? <Text className="pb-3 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
 
       <Button label="Create Account" onPress={handleCreateAccount} loading={loading} />
 

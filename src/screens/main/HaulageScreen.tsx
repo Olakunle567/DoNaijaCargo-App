@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { HomeStackParamList } from "../../navigation/types";
@@ -27,6 +27,17 @@ export function HaulageScreen({ navigation }: Props) {
   const [delivery, setDelivery] = useState("");
   const [description, setDescription] = useState("");
   const [pickupDate, setPickupDate] = useState("");
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const handleRequest = () => {
+    if (!pickup.trim() || !delivery.trim() || !description.trim()) {
+      setError("Please fill in pickup, delivery, and cargo description.");
+      return;
+    }
+    setError("");
+    setSent(true);
+  };
 
   return (
     <ScreenContainer scroll>
@@ -106,9 +117,34 @@ export function HaulageScreen({ navigation }: Props) {
         </Text>
       </View>
 
+      {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+
       <View className="py-5">
-        <Button label="REQUEST HAULAGE" onPress={() => navigation.goBack()} />
+        <Button label="REQUEST HAULAGE" onPress={handleRequest} />
       </View>
+
+      <Modal visible={sent} transparent animationType="fade">
+        <View className="flex-1 items-center justify-center bg-black/50 px-8">
+          <View className="w-full items-center rounded-3xl bg-white px-6 py-8">
+            <View className="mb-4 size-16 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
+              <Feather name="check" size={28} color="#1B4332" />
+            </View>
+            <Text className="pb-2 text-center font-outfit-extrabold text-[19px] text-ink">Request Sent!</Text>
+            <Text className="pb-6 text-center font-outfit text-[13px] leading-[19.5px] text-muted">
+              A haulage consultant will call you within 2 hours to confirm pricing and logistics.
+            </Text>
+            <View className="w-full">
+              <Button
+                label="Back to Home"
+                onPress={() => {
+                  setSent(false);
+                  navigation.goBack();
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }

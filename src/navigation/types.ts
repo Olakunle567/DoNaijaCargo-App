@@ -19,13 +19,24 @@ export type HomeStackParamList = {
   Shop: undefined;
 };
 
+export type ShipmentDetails = {
+  senderName: string;
+  pickupAddress: string;
+  receiverName: string;
+  deliveryAddress: string;
+  cargoType: string;
+  weight: string;
+  dimensions: string;
+};
+
 export type ShipStackParamList = {
   Ship: undefined;
-  GetEstimate: undefined;
+  GetEstimate: ShipmentDetails;
   Confirmed: { trackingRef: string };
 };
 
 export type RidingStackParamList = {
   Ride: undefined;
   RideActive: undefined;
+  Chat: undefined;
 };

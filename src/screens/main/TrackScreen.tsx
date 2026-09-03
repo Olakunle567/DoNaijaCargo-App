@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
 import { ScreenContainer } from "../../ui/ScreenContainer";
@@ -15,9 +15,28 @@ const MILESTONES = [
   { title: "Delivered", detail: "Pending confirmation", done: false },
 ];
 
+const KNOWN_TRACKING_ID = "DN-2024-08741";
+
 export function TrackScreen() {
-  const [trackingId, setTrackingId] = useState("DN-2024-08741");
+  const [queryInput, setQueryInput] = useState(KNOWN_TRACKING_ID);
+  const [trackingId, setTrackingId] = useState(KNOWN_TRACKING_ID);
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const drift = useSharedValue(0);
+
+  const handleTrack = () => {
+    const query = queryInput.trim().toUpperCase();
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      if (query === KNOWN_TRACKING_ID) {
+        setTrackingId(query);
+        setNotFound(false);
+      } else {
+        setNotFound(true);
+      }
+    }, 700);
+  };
 
   useEffect(() => {
     drift.value = withRepeat(
@@ -66,11 +85,25 @@ export function TrackScreen() {
 
         <View className="mt-4 flex-row items-center gap-2 rounded-2xl border-[1.984px] border-brand bg-[#EEF1EF] px-[14px] py-[10px]">
           <Feather name="map-pin" size={18} color="#1B4332" />
-          <Text className="flex-1 font-outfit-medium text-[13px] text-ink">{trackingId}</Text>
-          <Pressable className="rounded-[10px] bg-brand px-[14px] py-[7px]">
-            <Text className="font-outfit-extrabold text-[12px] tracking-[0.72px] text-white">TRACK</Text>
+          <TextInput
+            testID="track-id-input"
+            className="flex-1 font-outfit-medium text-[13px] text-ink"
+            value={queryInput}
+            onChangeText={(t) => {
+              setQueryInput(t);
+              setNotFound(false);
+            }}
+            onSubmitEditing={handleTrack}
+            autoCapitalize="characters"
+            returnKeyType="search"
+          />
+          <Pressable onPress={handleTrack} disabled={loading} className="min-w-[64px] items-center rounded-[10px] bg-brand px-[14px] py-[7px]">
+            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text className="font-outfit-extrabold text-[12px] tracking-[0.72px] text-white">TRACK</Text>}
           </Pressable>
         </View>
+        {notFound ? (
+          <Text className="pt-2 font-outfit-semibold text-[12px] text-[#DC2626]">No shipment found for that tracking ID.</Text>
+        ) : null}
 
         <View className="mt-4 gap-1 rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-surface p-[18px]">
           <View className="flex-row items-start justify-between">

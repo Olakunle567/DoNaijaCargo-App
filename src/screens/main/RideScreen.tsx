@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RidingStackParamList } from "../../navigation/types";
@@ -27,6 +27,18 @@ const NEARBY_RIDERS = [
 
 export function RideScreen({ navigation }: Props) {
   const [vehicle, setVehicle] = useState<(typeof VEHICLES)[number]["key"]>("bike");
+  const [pickup, setPickup] = useState("15 Adeola Odeku St, VI");
+  const [destination, setDestination] = useState("");
+  const [error, setError] = useState("");
+
+  const handleRequest = () => {
+    if (!destination.trim()) {
+      setError("Enter a delivery destination.");
+      return;
+    }
+    setError("");
+    navigation.navigate("RideActive");
+  };
 
   return (
     <View className="flex-1 bg-[#C8DCC5]">
@@ -58,13 +70,27 @@ export function RideScreen({ navigation }: Props) {
         <View className="mt-[14px] gap-2">
           <View className="flex-row items-center gap-2 rounded-xl border-[1.322px] border-border-brand bg-surface px-[13px] py-[11px]">
             <View className="size-2 rounded-full bg-brand" />
-            <Text className="font-outfit-medium text-[13px] text-ink">15 Adeola Odeku St, VI</Text>
+            <TextInput
+              className="flex-1 font-outfit-medium text-[13px] text-ink"
+              value={pickup}
+              onChangeText={setPickup}
+            />
           </View>
           <View className="flex-row items-center gap-2 rounded-xl border-[1.322px] border-border-brand bg-surface px-[13px] py-[11px]">
             <Feather name="map-pin" size={16} color="#374151" />
-            <Text className="font-outfit-medium text-[13px] text-ink/50">Delivery destination</Text>
+            <TextInput
+              className="flex-1 font-outfit-medium text-[13px] text-ink"
+              placeholder="Delivery destination"
+              placeholderTextColor="#99A1AF"
+              value={destination}
+              onChangeText={(t) => {
+                setDestination(t);
+                setError("");
+              }}
+            />
           </View>
         </View>
+        {error ? <Text className="pt-2 font-outfit-semibold text-[12px] text-[#DC2626]">{error}</Text> : null}
 
         <Text className="pt-4 font-outfit-semibold text-[11px] tracking-[0.55px] text-muted">VEHICLE TYPE</Text>
         <View className="mt-2 flex-row gap-2">
@@ -98,7 +124,7 @@ export function RideScreen({ navigation }: Props) {
         </View>
 
         <View className="pt-[14px]">
-          <Button label="REQUEST RIDER" onPress={() => navigation.navigate("RideActive")} />
+          <Button label="REQUEST RIDER" onPress={handleRequest} />
         </View>
       </View>
     </View>

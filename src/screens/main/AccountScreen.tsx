@@ -1,9 +1,13 @@
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { Modal, Pressable, Text, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
+import { TextField } from "../../ui/TextField";
+import { Button } from "../../ui/Button";
 
 const STATS = [
   { label: "Shipments", value: "24" },
@@ -12,14 +16,55 @@ const STATS = [
 ];
 
 const MENU = [
-  { icon: "clipboard", family: "feather", title: "My Shipments", desc: "View all active shipments" },
-  { icon: "box", family: "feather", title: "Order History", desc: "Past cargo & shop deliveries" },
-  { icon: "credit-card", family: "feather", title: "Payment Methods", desc: "Cards, bank & wallet" },
-  { icon: "settings", family: "feather", title: "Settings", desc: "App preferences & notifications" },
+  { key: "shipments", icon: "clipboard", family: "feather", title: "My Shipments", desc: "View all active shipments" },
+  { key: "orders", icon: "box", family: "feather", title: "Order History", desc: "Past cargo & shop deliveries" },
+  { key: "payment", icon: "credit-card", family: "feather", title: "Payment Methods", desc: "Cards, bank & wallet" },
+  { key: "settings", icon: "settings", family: "feather", title: "Settings", desc: "App preferences & notifications" },
 ] as const;
+
+function formatNaira(n: number) {
+  return `₦${n.toLocaleString("en-NG")}`;
+}
 
 export function AccountScreen() {
   const { signOut } = useAuth();
+  const navigation = useNavigation<any>();
+
+  const [profile, setProfile] = useState({ name: "Adebayo Okafor", email: "adebayo@naijacargo.ng", phone: "+234 812 345 6789" });
+  const [draftProfile, setDraftProfile] = useState(profile);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const [balance, setBalance] = useState(36650);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("");
+
+  const [comingSoon, setComingSoon] = useState<string | null>(null);
+
+  const openEdit = () => {
+    setDraftProfile(profile);
+    setEditOpen(true);
+  };
+  const saveProfile = () => {
+    setProfile(draftProfile);
+    setEditOpen(false);
+  };
+
+  const handleMenuPress = (key: (typeof MENU)[number]["key"], title: string) => {
+    if (key === "shipments") {
+      navigation.navigate("HomeTab", { screen: "MyShipments" });
+    } else {
+      setComingSoon(title);
+    }
+  };
+
+  const handleTopUp = () => {
+    const amount = parseInt(topUpAmount, 10);
+    if (!amount || amount <= 0) return;
+    setBalance((b) => b + amount);
+    setTopUpAmount("");
+    setTopUpOpen(false);
+  };
+
   return (
     <ScreenContainer scroll className="px-0">
       <View className="px-5">
@@ -33,13 +78,13 @@ export function AccountScreen() {
               <Feather name="user" size={38} color="#1B4332" />
             </View>
             <View className="flex-1">
-              <Text className="font-outfit-extrabold text-[18px] text-ink">Adebayo Okafor</Text>
-              <Text className="pt-[2px] font-outfit text-[12px] text-muted">adebayo@naijacargo.ng</Text>
-              <Text className="font-outfit text-[12px] text-muted">+234 812 345 6789</Text>
+              <Text className="font-outfit-extrabold text-[18px] text-ink">{profile.name}</Text>
+              <Text className="pt-[2px] font-outfit text-[12px] text-muted">{profile.email}</Text>
+              <Text className="font-outfit text-[12px] text-muted">{profile.phone}</Text>
             </View>
           </View>
 
-          <Pressable className="items-center rounded-xl border-[1.984px] border-brand bg-white py-3">
+          <Pressable onPress={openEdit} className="items-center rounded-xl border-[1.984px] border-brand bg-white py-3">
             <Text className="font-outfit-bold text-[13px] tracking-[0.52px] text-brand">Edit Profile</Text>
           </Pressable>
 
@@ -65,15 +110,15 @@ export function AccountScreen() {
                 <MaterialCommunityIcons name="wallet-outline" size={20} color="#fff" />
                 <Text className="font-outfit-semibold text-[12px] tracking-[0.72px] text-white/75">D.O NAIJA WALLET</Text>
               </View>
-              <Text className="pt-[6px] font-outfit-black text-[26px] tracking-[-0.26px] text-white">₦36,650</Text>
+              <Text className="pt-[6px] font-outfit-black text-[26px] tracking-[-0.26px] text-white">{formatNaira(balance)}</Text>
               <Text className="pt-1 font-outfit text-[11px] text-white/55">Available balance · WLT-4482</Text>
             </View>
-            <View className="items-end gap-2">
+            <Pressable onPress={() => setTopUpOpen(true)} className="items-end gap-2">
               <View className="rounded-[10px] bg-white/15 px-[14px] py-[7px]">
                 <Text className="font-outfit-bold text-[12px] text-white">Top Up</Text>
               </View>
-              <Text className="font-outfit text-[10px] text-white/50">Tap to view</Text>
-            </View>
+              <Text className="font-outfit text-[10px] text-white/50">Tap to add funds</Text>
+            </Pressable>
           </View>
         </LinearGradient>
 
@@ -81,6 +126,7 @@ export function AccountScreen() {
           {MENU.map((item, i) => (
             <Pressable
               key={item.title}
+              onPress={() => handleMenuPress(item.key, item.title)}
               className={`flex-row items-center gap-3 px-4 py-[14px] ${i < MENU.length - 1 ? "border-b-[0.661px] border-[rgba(27,67,50,0.07)]" : ""}`}
             >
               <View className="size-10 items-center justify-center rounded-xl bg-[rgba(27,67,50,0.07)]">
@@ -105,6 +151,54 @@ export function AccountScreen() {
           <Text className="font-outfit-extrabold text-[15px] tracking-[1.2px] text-white">LOG OUT</Text>
         </Pressable>
       </View>
+
+      <Modal visible={editOpen} transparent animationType="fade" onRequestClose={() => setEditOpen(false)}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setEditOpen(false)}>
+          <Pressable className="gap-3 rounded-t-3xl bg-white px-[18px] pb-8 pt-5" onPress={(e) => e.stopPropagation()}>
+            <View className="items-center pb-1">
+              <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
+            </View>
+            <Text className="font-outfit-extrabold text-[17px] text-ink">Edit Profile</Text>
+            <TextField icon="user" placeholder="Full name" value={draftProfile.name} onChangeText={(t) => setDraftProfile((p) => ({ ...p, name: t }))} />
+            <TextField icon="mail" placeholder="Email" value={draftProfile.email} onChangeText={(t) => setDraftProfile((p) => ({ ...p, email: t }))} keyboardType="email-address" />
+            <TextField icon="phone" placeholder="Phone" value={draftProfile.phone} onChangeText={(t) => setDraftProfile((p) => ({ ...p, phone: t }))} keyboardType="phone-pad" />
+            <View className="pt-2">
+              <Button label="Save Changes" onPress={saveProfile} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={topUpOpen} transparent animationType="fade" onRequestClose={() => setTopUpOpen(false)}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setTopUpOpen(false)}>
+          <Pressable className="gap-3 rounded-t-3xl bg-white px-[18px] pb-8 pt-5" onPress={(e) => e.stopPropagation()}>
+            <View className="items-center pb-1">
+              <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
+            </View>
+            <Text className="font-outfit-extrabold text-[17px] text-ink">Top Up Wallet</Text>
+            <Text className="font-outfit text-[13px] text-muted">Current balance: {formatNaira(balance)}</Text>
+            <TextField icon="credit-card" placeholder="Amount (₦)" value={topUpAmount} onChangeText={setTopUpAmount} keyboardType="number-pad" />
+            <View className="pt-2">
+              <Button label="Add Funds" onPress={handleTopUp} disabled={!topUpAmount.trim()} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!comingSoon} transparent animationType="fade" onRequestClose={() => setComingSoon(null)}>
+        <Pressable className="flex-1 items-center justify-center bg-black/50 px-10" onPress={() => setComingSoon(null)}>
+          <Pressable className="w-full items-center rounded-3xl bg-white px-6 py-7" onPress={(e) => e.stopPropagation()}>
+            <View className="mb-3 size-12 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
+              <Feather name="clock" size={22} color="#1B4332" />
+            </View>
+            <Text className="pb-1 font-outfit-extrabold text-[16px] text-ink">{comingSoon}</Text>
+            <Text className="pb-4 text-center font-outfit text-[13px] text-muted">This feature is coming soon.</Text>
+            <View className="w-full">
+              <Button label="Got it" onPress={() => setComingSoon(null)} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }
