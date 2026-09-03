@@ -1,0 +1,33 @@
+import type { ReactNode } from "react";
+import { ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+export function ScreenContainer({
+  children,
+  scroll = false,
+  className = "",
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  className?: string;
+}) {
+  if (scroll) {
+    return (
+      <SafeAreaView className={`flex-1 bg-white ${className}`}>
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-5 pb-6 pt-2"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+  return (
+    <SafeAreaView className={`flex-1 bg-white ${className}`}>
+      <View className="flex-1 px-5 pb-6 pt-2">{children}</View>
+    </SafeAreaView>
+  );
+}
