@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
+import { useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
@@ -16,10 +17,14 @@ export function SignUpScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const handleCreateAccount = () => {
     setLoading(true);
-    setTimeout(() => setLoading(false), 900);
+    setTimeout(() => {
+      setLoading(false);
+      signIn();
+    }, 900);
   };
 
   return (

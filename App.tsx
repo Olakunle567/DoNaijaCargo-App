@@ -1,5 +1,5 @@
 import "./global.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreenModule from "expo-splash-screen";
@@ -15,8 +15,15 @@ import {
   Outfit_900Black,
 } from "@expo-google-fonts/outfit";
 import { AuthNavigator } from "./src/navigation/AuthNavigator";
+import { MainTabNavigator } from "./src/navigation/MainTabNavigator";
+import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 
 SplashScreenModule.preventAutoHideAsync();
+
+function RootNavigator() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <MainTabNavigator /> : <AuthNavigator />;
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -41,10 +48,12 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayout}>
       <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <AuthNavigator />
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

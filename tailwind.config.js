@@ -24,6 +24,7 @@ module.exports = {
         "outfit-semibold": ["Outfit_600SemiBold"],
         "outfit-bold": ["Outfit_700Bold"],
         "outfit-extrabold": ["Outfit_800ExtraBold"],
+        "outfit-black": ["Outfit_900Black"],
       },
       borderRadius: {
         xl: "14px",

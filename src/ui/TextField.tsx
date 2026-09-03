@@ -3,7 +3,7 @@ import { Pressable, TextInput, View, type KeyboardTypeOptions } from "react-nati
 import { Feather } from "@expo/vector-icons";
 
 type TextFieldProps = {
-  icon: keyof typeof Feather.glyphMap;
+  icon?: keyof typeof Feather.glyphMap;
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -25,7 +25,7 @@ export function TextField({
 
   return (
     <View className="flex-row items-center gap-3 rounded-xl border-[1.322px] border-border-brand bg-surface px-[15px] py-[13px]">
-      <Feather name={icon} size={18} color="#374151" />
+      {icon ? <Feather name={icon} size={18} color="#374151" /> : null}
       <TextInput
         className="flex-1 font-outfit text-[14px] text-ink"
         placeholder={placeholder}

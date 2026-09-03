@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
+import { useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
@@ -16,10 +17,14 @@ export function SignInScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const handleSignIn = () => {
     setLoading(true);
-    setTimeout(() => setLoading(false), 900);
+    setTimeout(() => {
+      setLoading(false);
+      signIn();
+    }, 900);
   };
 
   return (
@@ -60,8 +65,8 @@ export function SignInScreen({ navigation }: Props) {
       </View>
 
       <View className="gap-[10px]">
-        <Button label="Continue with Google" variant="white" icon={<GoogleIcon size={20} />} />
-        <Button label="Continue with Apple" variant="dark" icon={<AppleIcon size={18} />} />
+        <Button label="Continue with Google" variant="white" icon={<GoogleIcon size={20} />} onPress={signIn} />
+        <Button label="Continue with Apple" variant="dark" icon={<AppleIcon size={18} />} onPress={signIn} />
       </View>
 
       <View className="flex-row items-center justify-center gap-[6px] pt-7">
