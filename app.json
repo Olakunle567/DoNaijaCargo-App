@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "DoNaijaCargo-App",
-    "slug": "DoNaijaCargo-App",
+    "slug": "donaijacargo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +24,12 @@
     "plugins": [
       "expo-font",
       "expo-splash-screen"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7d5e5fda-6180-471b-ba7c-bf1473ee6688"
+      }
+    },
+    "owner": "escrowflows-team"
   }
 }
