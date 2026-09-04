@@ -7,7 +7,10 @@ const paymentProvider: PaymentProvider = new MockProvider();
 
 type TopUpWalletInput = { amount: number };
 
-/** MOCK top-up. See payments/MockProvider.ts for the seam where a real gateway plugs in. */
+// MOCK: no real payment gateway yet (see payments/MockProvider.ts for the
+// seam where one plugs in) — but this credits the caller's own real
+// wallet/current document in Firestore via a transaction, so the balance
+// the user sees is theirs and persists.
 export const topUpWallet = onCall<TopUpWalletInput>(async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Sign in required.");
 

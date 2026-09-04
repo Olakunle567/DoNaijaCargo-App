@@ -4,7 +4,7 @@ import { db } from "../lib/firebase";
 import { cancelRide as cancelRideApi } from "./api";
 import type { VehicleType } from "./api";
 
-export type Rider = { name: string; rating: number; trips: number; vehicle: string; plate: string };
+export type Rider = { name: string; rating: number; trips: number; vehicle: string; plate: string; phone: string };
 
 export type RideStatus = "searching" | "matched" | "cancelled" | "completed";
 

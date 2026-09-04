@@ -1,4 +1,5 @@
 import type { EstimateTiers } from "../shipments/api";
+import type { Rider } from "../rides/useRide";
 
 export type AuthStackParamList = {
   Splash: undefined;
@@ -40,7 +41,7 @@ export type ShipStackParamList = {
 export type RidingStackParamList = {
   Ride: undefined;
   RideActive: { rideId: string };
-  Chat: undefined;
+  Chat: { rider: Rider };
 };
 
 export type AccountStackParamList = {

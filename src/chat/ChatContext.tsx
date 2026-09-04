@@ -27,6 +27,11 @@ const RIDER_REPLIES = [
   "On my way, be there shortly!",
 ];
 
+// MOCK: no real messaging backend exists yet — this whole provider is a
+// client-side simulation (a seeded opening line, canned auto-replies on a
+// timer). Nothing here is persisted or tied to a specific ride/rider; the
+// rider identity shown alongside it in ChatScreen comes from the real ride
+// doc, but the conversation itself is not real.
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: "seed-1", from: "rider", text: "Hi! I'm on my way to pick up your package.", time: now() },

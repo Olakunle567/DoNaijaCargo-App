@@ -77,11 +77,13 @@ export async function applyNextMilestone(trackingRef: string): Promise<{ id: str
 }
 
 // ---------------------------------------------------------------------------
-// advanceTracking — dev-only manual trigger.
+// MOCK: advanceTracking — dev-only manual trigger.
 //
 // There's no live GPS/carrier integration yet, so this callable is how we
 // simulate a shipment progressing: a __DEV__-gated button in TrackScreen
-// calls it against the emulator to watch the timeline move.
+// calls it against the emulator to watch the timeline move. It operates on
+// the caller's real shipment doc (applyNextMilestone below looks it up by
+// trackingRef) — only the "something moved" trigger is fake, not the data.
 //
 // It only checks that the caller is signed in — no ownership or role check —
 // which is fine for a dev-only tool but MUST NOT ship like this.

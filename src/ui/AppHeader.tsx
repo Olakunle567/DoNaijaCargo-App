@@ -30,9 +30,11 @@ export function AppHeader({ notificationCount = 3 }: { notificationCount?: numbe
   const [notifOpen, setNotifOpen] = useState(false);
   const [unread, setUnread] = useState(notificationCount);
 
+  // MOCK: push notifications aren't built — this panel is illustrative,
+  // static sample content, not tied to any real event or backend.
   const NOTIFICATIONS = [
-    { icon: "truck", title: "Shipment in transit", detail: "DN-2024-08741 left Apapa Sorting Facility", time: "2h ago" },
-    { icon: "map-pin", title: "Rider is close", detail: "Emeka is about 4 minutes away", time: "5m ago" },
+    { icon: "truck", title: "Shipment in transit", detail: "Your shipment left the sorting facility", time: "2h ago" },
+    { icon: "map-pin", title: "Rider is close", detail: "Your rider is about 4 minutes away", time: "5m ago" },
     { icon: "tag", title: "20% off this week", detail: `Free delivery on Shop orders over ${formatCurrency(10000, currency)}`, time: "1d ago" },
   ] as const;
 

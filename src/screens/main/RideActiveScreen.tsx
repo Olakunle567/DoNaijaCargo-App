@@ -15,8 +15,6 @@ import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "RideActive">;
 
-const RIDER_PHONE = "+2348012345678";
-
 export function RideActiveScreen({ navigation, route }: Props) {
   const { currency } = useSettings();
   const [sheet, setSheet] = useState<"none" | "contact" | "cancel">("none");
@@ -31,7 +29,7 @@ export function RideActiveScreen({ navigation, route }: Props) {
     sendMessage(message);
     setMessage("");
     setSheet("none");
-    navigation.navigate("Chat");
+    navigation.navigate("Chat", { rider: rider! });
   };
 
   const handleConfirmCancel = async () => {
@@ -191,14 +189,14 @@ export function RideActiveScreen({ navigation, route }: Props) {
                 </View>
                 <View className="flex-row gap-3 pb-4">
                   <Pressable
-                    onPress={() => Linking.openURL(`tel:${RIDER_PHONE}`)}
+                    onPress={() => rider && Linking.openURL(`tel:${rider.phone}`)}
                     className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3"
                   >
                     <Feather name="phone" size={16} color="#1B4332" />
                     <Text className="font-outfit-bold text-[13px] text-brand">Call Rider</Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => Linking.openURL(`https://wa.me/${RIDER_PHONE.replace("+", "")}`)}
+                    onPress={() => rider && Linking.openURL(`https://wa.me/${rider.phone.replace("+", "")}`)}
                     className="flex-1 items-center gap-1 rounded-2xl border-[1.322px] border-border-brand bg-surface py-3"
                   >
                     <Feather name="message-circle" size={16} color="#1B4332" />
@@ -208,7 +206,7 @@ export function RideActiveScreen({ navigation, route }: Props) {
                 <Pressable
                   onPress={() => {
                     setSheet("none");
-                    navigation.navigate("Chat");
+                    navigation.navigate("Chat", { rider: rider! });
                   }}
                   className="mb-3 flex-row items-center justify-center gap-2 rounded-2xl bg-[#EEF1EF] py-3"
                 >

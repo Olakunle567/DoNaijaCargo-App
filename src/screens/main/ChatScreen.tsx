@@ -8,9 +8,8 @@ import { useChat, type ChatMessage } from "../../chat/ChatContext";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "Chat">;
 
-const RIDER_PHONE = "+2348012345678";
-
-export function ChatScreen({ navigation }: Props) {
+export function ChatScreen({ navigation, route }: Props) {
+  const { rider } = route.params;
   const { messages, sendMessage, markRead } = useChat();
   const [draft, setDraft] = useState("");
   const listRef = useRef<FlatList<ChatMessage>>(null);
@@ -41,13 +40,13 @@ export function ChatScreen({ navigation }: Props) {
             <Text className="text-[18px]">🧑🏾</Text>
           </View>
           <View className="flex-1">
-            <Text className="font-outfit-bold text-[15px] text-ink">Emeka Obi</Text>
+            <Text className="font-outfit-bold text-[15px] text-ink">{rider.name}</Text>
             <View className="flex-row items-center gap-1">
               <View className="size-[6px] rounded-full bg-[#22C55E]" />
-              <Text className="font-outfit text-[11px] text-muted">Online · Green Bajaj</Text>
+              <Text className="font-outfit text-[11px] text-muted">Online · {rider.vehicle}</Text>
             </View>
           </View>
-          <Pressable onPress={() => Linking.openURL(`tel:${RIDER_PHONE}`)} className="size-9 items-center justify-center rounded-xl bg-[#EEF1EF]" hitSlop={6}>
+          <Pressable onPress={() => Linking.openURL(`tel:${rider.phone}`)} className="size-9 items-center justify-center rounded-xl bg-[#EEF1EF]" hitSlop={6}>
             <Feather name="phone" size={17} color="#1B4332" />
           </Pressable>
         </View>
@@ -79,7 +78,7 @@ export function ChatScreen({ navigation }: Props) {
           <View className="flex-1 flex-row items-center rounded-2xl border-[1.322px] border-border-brand bg-surface px-4 py-[10px]">
             <TextInput
               className="flex-1 font-outfit text-[14px] text-ink"
-              placeholder="Message Emeka…"
+              placeholder={`Message ${rider.name.split(" ")[0]}…`}
               placeholderTextColor="#99A1AF"
               value={draft}
               onChangeText={setDraft}

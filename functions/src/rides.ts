@@ -14,12 +14,16 @@ const VEHICLE_RATES: Record<VehicleType, { priceEstimate: number; etaMin: number
   van: { priceEstimate: 8900, etaMin: 20 },
 };
 
+// MOCK: no real rider-dispatch network exists yet, so every ride is matched
+// to this fixed identity. It's written onto the user's real ride doc below,
+// same as a real dispatch would — only the matching itself is fake.
 const MOCK_RIDER = {
   name: "Emeka Obi",
   rating: 4.8,
   trips: 202,
   vehicle: "Green Bajaj",
   plate: "LND 482 JK",
+  phone: "+2348012345678",
 };
 
 const CANCELLATION_FEE_NGN = 500;

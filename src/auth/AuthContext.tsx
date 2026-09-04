@@ -6,7 +6,6 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import {
   createUserWithEmailAndPassword,
-  getAdditionalUserInfo,
   GoogleAuthProvider,
   OAuthProvider,
   onAuthStateChanged,
@@ -16,7 +15,7 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
 // ---------------------------------------------------------------------------
@@ -24,11 +23,11 @@ import { auth, db } from "../lib/firebase";
 // ---------------------------------------------------------------------------
 
 /**
- * Starting balance a wallet is created with at sign-up. Mirrors the design
- * mock (₦36,650, see AccountScreen). Must match the hardcoded check in the
- * `wallet/current` create rule in firestore.rules.
+ * Starting balance a wallet is created with at sign-up. Real accounts start
+ * empty — must match the hardcoded check in the `wallet/current` create rule
+ * in firestore.rules.
  */
-const INITIAL_WALLET_BALANCE_NGN = 36_650;
+const INITIAL_WALLET_BALANCE_NGN = 0;
 
 /**
  * Gates what Google/Apple sign-in actually do:
@@ -114,16 +113,6 @@ function friendlyAuthError(error: unknown): string {
   return AUTH_ERROR_MESSAGES[errorCode(error)] ?? "Something went wrong. Please try again.";
 }
 
-/**
- * Like `throw new Error(friendlyAuthError(error))`, except a plain Error we
- * threw ourselves (no `.code` — Firebase/native errors always have one) is
- * rethrown with its own message intact instead of being genericized.
- */
-function throwFriendly(error: unknown): never {
-  if (error instanceof Error && !errorCode(error)) throw error;
-  throw new Error(friendlyAuthError(error));
-}
-
 // ---------------------------------------------------------------------------
 // Firestore writes
 // ---------------------------------------------------------------------------
@@ -132,13 +121,33 @@ function generateWalletId() {
   return `WLT-${Math.floor(1000 + Math.random() * 8999)}`;
 }
 
-async function createUserDocs(user: User, fullName: string, email: string, phone: string) {
-  await setDoc(doc(db, "users", user.uid), { fullName, email, phone, createdAt: serverTimestamp() });
+async function createUserDocs(user: User, fullName: string, email: string, phone: string, photoURL?: string) {
+  await setDoc(doc(db, "users", user.uid), {
+    fullName,
+    email,
+    phone,
+    ...(photoURL ? { photoURL } : {}),
+    createdAt: serverTimestamp(),
+  });
   await setDoc(doc(db, "users", user.uid, "wallet", "current"), {
     balance: INITIAL_WALLET_BALANCE_NGN,
     walletId: generateWalletId(),
     currency: "NGN",
   });
+}
+
+/**
+ * True when this signed-in user has no users/{uid} profile doc yet — the
+ * authoritative "is this actually a first-time account" check. More robust
+ * than Firebase Auth's own getAdditionalUserInfo(...).isNewUser: if a prior
+ * sign-up's createUserDocs call ever failed after the Auth account was
+ * created (e.g. a dropped network request), isNewUser would wrongly read
+ * false forever after, permanently skipping profile creation. Checking
+ * Firestore directly self-heals that case instead.
+ */
+async function hasNoProfileDoc(uid: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, "users", uid));
+  return !snap.exists();
 }
 
 /** Signs in the fixed demo identity, creating it (profile + wallet) on first use. */
@@ -234,12 +243,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           const credential = GoogleAuthProvider.credential(idToken);
           const result = await signInWithCredential(auth, credential);
-          if (getAdditionalUserInfo(result)?.isNewUser) {
-            await createUserDocs(result.user, googleUser.name ?? result.user.displayName ?? "", googleUser.email, "");
+
+          // One flow for sign-in and sign-up: Firebase creates the account
+          // automatically if it's new. Check Firestore directly (not just
+          // getAdditionalUserInfo(...).isNewUser — see hasNoProfileDoc)
+          // for whether THIS user still needs a profile+wallet; an existing
+          // user is signed in as-is, never overwritten.
+          if (await hasNoProfileDoc(result.user.uid)) {
+            await createUserDocs(
+              result.user,
+              googleUser.name ?? result.user.displayName ?? "",
+              googleUser.email,
+              "",
+              googleUser.photo ?? undefined
+            );
           }
         } catch (error) {
           if (isSocialSignInCancellation(error)) return;
-          throwFriendly(error);
+          console.error("[auth] Google sign-in failed:", error);
+          const reason = errorCode(error) ? friendlyAuthError(error) : error instanceof Error ? error.message : String(error);
+          throw new Error(`Google sign-in failed: ${reason}`);
         }
       },
 
@@ -269,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const credential = provider.credential({ idToken: appleCredential.identityToken, rawNonce });
           const result = await signInWithCredential(auth, credential);
 
-          if (getAdditionalUserInfo(result)?.isNewUser) {
+          if (await hasNoProfileDoc(result.user.uid)) {
             // Apple only shares the name/email on the first-ever authorization for this app.
             const fullName = [appleCredential.fullName?.givenName, appleCredential.fullName?.familyName]
               .filter(Boolean)
@@ -281,7 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           if (isSocialSignInCancellation(error)) return;
-          throwFriendly(error);
+          console.error("[auth] Apple sign-in failed:", error);
+          const reason = errorCode(error) ? friendlyAuthError(error) : error instanceof Error ? error.message : String(error);
+          throw new Error(`Apple sign-in failed: ${reason}`);
         }
       },
 

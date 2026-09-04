@@ -43,15 +43,16 @@ service cloud.firestore {
 
       // users/{uid}/wallet/current — balance/walletId/currency.
       // The client creates this exactly once, at sign-up, with the fixed
-      // starting balance (INITIAL_WALLET_BALANCE_NGN in AuthContext.tsx).
-      // Every later write (top-ups, debits) must go through trusted
-      // backend code — Admin SDK bypasses rules — so update/delete stay
-      // closed and the create is pinned to that one starting value.
+      // starting balance (INITIAL_WALLET_BALANCE_NGN in AuthContext.tsx) —
+      // real accounts start empty. Every later write (top-ups, debits) must
+      // go through trusted backend code — Admin SDK bypasses rules — so
+      // update/delete stay closed and the create is pinned to that one
+      // starting value.
       match /wallet/current {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid)
           && request.resource.data.keys().hasOnly(['balance', 'walletId', 'currency'])
-          && request.resource.data.balance == 36650
+          && request.resource.data.balance == 0
           && request.resource.data.currency == 'NGN'
           && request.resource.data.walletId is string;
         allow update, delete: if false;
