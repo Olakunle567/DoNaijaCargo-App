@@ -7,6 +7,7 @@ import type { HomeStackParamList, MainTabParamList } from "../../navigation/type
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { WireframeBox } from "../../ui/WireframeBox";
+import { useAuth } from "../../auth/AuthContext";
 import { useSettings } from "../../settings/SettingsContext";
 import type { TranslationKey } from "../../lib/i18n";
 
@@ -40,6 +41,8 @@ function GridIcon({ family, name }: { family: "feather" | "mci"; name: string })
 
 export function HomeScreen({ navigation }: Props) {
   const { t } = useSettings();
+  const { user } = useAuth();
+  const firstName = user?.displayName?.trim().split(/\s+/)[0] ?? "";
   const handlePress = (key: string) => {
     switch (key) {
       case "ship":
@@ -71,7 +74,10 @@ export function HomeScreen({ navigation }: Props) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pb-6 pt-2">
         <View className="overflow-hidden rounded-[20px] bg-brand px-6 py-5">
           <View className="absolute -right-5 -top-5 size-[180px] rounded-full bg-white/[0.04]" />
-          <Text className="text-subhead font-outfit text-white/70">{t("welcomeBack")}</Text>
+          <Text className="text-subhead font-outfit text-white/70">
+            {t("welcomeBack")}
+            {firstName ? ` ${firstName}` : ""}
+          </Text>
           <Text className="pt-1 text-largeTitle font-outfit-extrabold text-white">{t("welcome")}</Text>
           <View className="absolute right-6 top-5">
             <WireframeBox />

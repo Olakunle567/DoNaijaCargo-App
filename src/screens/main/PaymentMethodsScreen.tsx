@@ -6,6 +6,9 @@ import type { AccountStackParamList } from "../../navigation/types";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { BackHeader } from "../../ui/BackHeader";
 import { Button } from "../../ui/Button";
+import { useWallet } from "../../wallet/useWallet";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "PaymentMethods">;
 
@@ -18,10 +21,10 @@ function detectBrand(number: string): Card["brand"] {
 }
 
 export function PaymentMethodsScreen({ navigation }: Props) {
-  const [cards, setCards] = useState<Card[]>([
-    { id: "card-1", brand: "Visa", last4: "4242", expiry: "08/27", name: "Adebayo Okafor" },
-  ]);
-  const [defaultId, setDefaultId] = useState("card-1");
+  const { wallet } = useWallet();
+  const { currency } = useSettings();
+  const [cards, setCards] = useState<Card[]>([]);
+  const [defaultId, setDefaultId] = useState("");
 
   const [addOpen, setAddOpen] = useState(false);
   const [number, setNumber] = useState("");
@@ -87,7 +90,9 @@ export function PaymentMethodsScreen({ navigation }: Props) {
           </View>
           <View className="flex-1">
             <Text className="font-outfit-semibold text-[14px] text-ink">D.O Naija Wallet</Text>
-            <Text className="font-outfit text-[11.5px] text-muted">Available balance · WLT-4482</Text>
+            <Text className="font-outfit text-[11.5px] text-muted">
+              {wallet ? `${formatCurrency(wallet.balance, currency)} available · ${wallet.walletId}` : "···"}
+            </Text>
           </View>
         </View>
 

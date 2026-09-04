@@ -4,20 +4,19 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../auth/AuthContext";
+import { useUserProfile } from "../../auth/useUserProfile";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
 import { useWallet } from "../../wallet/useWallet";
 import { topUpWallet } from "../../wallet/api";
+import { useShipments } from "../../shipments/useShipments";
+import { useRides } from "../../rides/useRides";
 import { useSettings } from "../../settings/SettingsContext";
 import { CURRENCIES, convertToNgn, formatCurrency } from "../../lib/currency";
 
-const STATS = [
-  { label: "Shipments", value: "24" },
-  { label: "Dispatches", value: "8" },
-  { label: "Pending", value: "2" },
-];
+const ACTIVE_SHIPMENT_STATUSES = ["In Transit", "At Sorting Centre", "Out for Delivery", "Pending Pickup"];
 
 const MENU = [
   { key: "shipments", icon: "clipboard", family: "feather", title: "My Shipments", desc: "View all active shipments" },
@@ -27,27 +26,50 @@ const MENU = [
 ] as const;
 
 export function AccountScreen() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigation = useNavigation<any>();
   const { currency, t } = useSettings();
 
-  const [profile, setProfile] = useState({ name: "Adebayo Okafor", email: "adebayo@naijacargo.ng", phone: "+234 812 345 6789" });
-  const [draftProfile, setDraftProfile] = useState(profile);
+  const { profile, saveProfile: persistProfile } = useUserProfile();
+  const displayName = profile?.fullName || user?.displayName || "";
+  const displayEmail = profile?.email || user?.email || "";
+  const displayPhone = profile?.phone || "";
+
+  const [draftProfile, setDraftProfile] = useState({ name: displayName, email: displayEmail, phone: displayPhone });
   const [editOpen, setEditOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
 
   const { wallet } = useWallet();
+  const { shipments } = useShipments();
+  const { rides } = useRides();
+  const stats = [
+    { label: "Shipments", value: String(shipments.length) },
+    { label: "Dispatches", value: String(rides.length) },
+    { label: "Pending", value: String(shipments.filter((s) => ACTIVE_SHIPMENT_STATUSES.includes(s.status)).length) },
+  ];
+
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [toppingUp, setToppingUp] = useState(false);
   const [topUpError, setTopUpError] = useState("");
 
   const openEdit = () => {
-    setDraftProfile(profile);
+    setDraftProfile({ name: displayName, email: displayEmail, phone: displayPhone });
+    setProfileError("");
     setEditOpen(true);
   };
-  const saveProfile = () => {
-    setProfile(draftProfile);
-    setEditOpen(false);
+  const handleSaveProfile = async () => {
+    setProfileError("");
+    setSavingProfile(true);
+    try {
+      await persistProfile({ fullName: draftProfile.name, email: draftProfile.email, phone: draftProfile.phone });
+      setEditOpen(false);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Couldn't save your profile. Please try again.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleMenuPress = (key: (typeof MENU)[number]["key"]) => {
@@ -104,18 +126,18 @@ export function AccountScreen() {
               <Feather name="user" size={38} color="#1B4332" />
             </View>
             <View className="flex-1">
-              <Text className="font-outfit-extrabold text-[18px] text-ink">{profile.name}</Text>
-              <Text className="pt-[2px] font-outfit text-[12px] text-muted">{profile.email}</Text>
-              <Text className="font-outfit text-[12px] text-muted">{profile.phone}</Text>
+              <Text className="font-outfit-extrabold text-[18px] text-ink">{displayName || "···"}</Text>
+              <Text className="pt-[2px] font-outfit text-[12px] text-muted">{displayEmail || "···"}</Text>
+              {displayPhone ? <Text className="font-outfit text-[12px] text-muted">{displayPhone}</Text> : null}
             </View>
           </View>
 
-          <Pressable onPress={openEdit} className="items-center rounded-xl border-[1.984px] border-brand bg-white py-3">
+          <Pressable onPress={openEdit} className="items-center rounded-xl border-[1.984px] border-brand bg-white py-3 active:opacity-70">
             <Text className="font-outfit-bold text-[13px] tracking-[0.52px] text-brand">Edit Profile</Text>
           </Pressable>
 
           <View className="flex-row justify-between border-t-[0.661px] border-[rgba(27,67,50,0.1)] pt-[14px]">
-            {STATS.map((s) => (
+            {stats.map((s) => (
               <View key={s.label} className="items-center">
                 <Text className="font-outfit-extrabold text-[20px] text-brand">{s.value}</Text>
                 <Text className="font-outfit-medium text-[10px] text-muted">{s.label}</Text>
@@ -189,11 +211,12 @@ export function AccountScreen() {
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
             <Text className="font-outfit-extrabold text-[17px] text-ink">Edit Profile</Text>
-            <TextField icon="user" placeholder="Full name" value={draftProfile.name} onChangeText={(t) => setDraftProfile((p) => ({ ...p, name: t }))} />
-            <TextField icon="mail" placeholder="Email" value={draftProfile.email} onChangeText={(t) => setDraftProfile((p) => ({ ...p, email: t }))} keyboardType="email-address" />
-            <TextField icon="phone" placeholder="Phone" value={draftProfile.phone} onChangeText={(t) => setDraftProfile((p) => ({ ...p, phone: t }))} keyboardType="phone-pad" />
+            <TextField icon="user" placeholder="Full name" value={draftProfile.name} onChangeText={(v) => setDraftProfile((p) => ({ ...p, name: v }))} />
+            <TextField icon="mail" placeholder="Email" value={draftProfile.email} onChangeText={(v) => setDraftProfile((p) => ({ ...p, email: v }))} keyboardType="email-address" />
+            <TextField icon="phone" placeholder="Phone" value={draftProfile.phone} onChangeText={(v) => setDraftProfile((p) => ({ ...p, phone: v }))} keyboardType="phone-pad" />
+            {profileError ? <Text className="text-footnote font-outfit-semibold text-[#DC2626]">{profileError}</Text> : null}
             <View className="pt-2">
-              <Button label="Save Changes" onPress={saveProfile} />
+              <Button label="Save Changes" onPress={handleSaveProfile} loading={savingProfile} />
             </View>
           </Pressable>
         </Pressable>
