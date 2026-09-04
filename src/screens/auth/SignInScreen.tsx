@@ -3,7 +3,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
-import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
+import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, GOOGLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
@@ -57,7 +57,7 @@ export function SignInScreen({ navigation }: Props) {
   // AUTH_SOCIAL_REAL: the provider's own native UI (Google account picker,
   // Apple Face ID sheet) replaces our mocked GoogleAuthSheet/AppleAuthSheet.
   const handleGooglePress = () => {
-    if (!AUTH_SOCIAL_REAL) {
+    if (!AUTH_SOCIAL_REAL || !GOOGLE_SIGN_IN_SUPPORTED) {
       setGoogleOpen(true);
       return;
     }

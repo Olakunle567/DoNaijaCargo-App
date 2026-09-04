@@ -49,6 +49,14 @@ export const AUTH_SOCIAL_REAL = process.env.EXPO_PUBLIC_AUTH_SOCIAL_REAL === "tr
 /** Apple only offers a native sign-in surface on iOS — no Android equivalent. */
 export const APPLE_SIGN_IN_SUPPORTED = !AUTH_SOCIAL_REAL || Platform.OS === "ios";
 
+/**
+ * @react-native-google-signin/google-signin has no free web implementation
+ * (its web build is a sponsor-only feature — see GoogleSignin.web.js, which
+ * just throws "not-implemented" for every method). So even with
+ * AUTH_SOCIAL_REAL on, web keeps using the mocked GoogleAuthSheet flow.
+ */
+export const GOOGLE_SIGN_IN_SUPPORTED = !AUTH_SOCIAL_REAL || Platform.OS !== "web";
+
 // Fixed demo identities, matching GoogleAuthSheet's DEMO_ACCOUNT and
 // AppleAuthSheet's DEMO_APPLE_ID. Password is only ever used for this
 // mock path — never shown to the user, never a "real" credential.
@@ -60,7 +68,7 @@ const googleSignInConfig = Constants.expoConfig?.extra?.googleSignIn as
   | { webClientId?: string; iosClientId?: string }
   | undefined;
 
-if (AUTH_SOCIAL_REAL && googleSignInConfig?.webClientId) {
+if (AUTH_SOCIAL_REAL && GOOGLE_SIGN_IN_SUPPORTED && googleSignInConfig?.webClientId) {
   GoogleSignin.configure({
     webClientId: googleSignInConfig.webClientId,
     iosClientId: googleSignInConfig.iosClientId,
@@ -205,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       signInWithGoogle: async () => {
-        if (!AUTH_SOCIAL_REAL) {
+        if (!AUTH_SOCIAL_REAL || !GOOGLE_SIGN_IN_SUPPORTED) {
           try {
             await ensureDemoUser(DEMO_GOOGLE_ACCOUNT);
           } catch (error) {

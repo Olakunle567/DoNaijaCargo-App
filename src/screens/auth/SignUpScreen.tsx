@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
-import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
+import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, GOOGLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
@@ -41,7 +41,7 @@ export function SignUpScreen({ navigation }: Props) {
   // creates the account on first use — so Google/Apple here just reuse
   // AuthContext's signInWithGoogle/signInWithApple (same as SignInScreen).
   const handleGooglePress = () => {
-    if (!AUTH_SOCIAL_REAL) {
+    if (!AUTH_SOCIAL_REAL || !GOOGLE_SIGN_IN_SUPPORTED) {
       setGoogleOpen(true);
       return;
     }
