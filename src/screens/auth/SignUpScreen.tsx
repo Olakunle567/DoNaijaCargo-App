@@ -91,8 +91,8 @@ export function SignUpScreen({ navigation }: Props) {
       </View>
 
       <View className="pt-2">
-        <Text className="font-outfit-extrabold text-[26px] text-ink">Create Account</Text>
-        <Text className="pt-[6px] font-outfit text-[13px] text-muted">
+        <Text className="text-largeTitle font-outfit-extrabold text-ink">Create Account</Text>
+        <Text className="pt-1 text-subhead font-outfit text-muted">
           Join D.O Naija Cargo and start shipping smarter.
         </Text>
       </View>
@@ -125,14 +125,14 @@ export function SignUpScreen({ navigation }: Props) {
       </View>
 
       <View className="my-5 rounded-xl border-[0.661px] border-[rgba(27,67,50,0.08)] bg-[#EEF1EF] px-[13px] py-[11px]">
-        <Text className="font-outfit text-[11.5px] leading-[17.825px] text-muted">
+        <Text className="text-footnote font-outfit text-muted">
           By creating an account, you agree to our{" "}
           <Text className="font-outfit-bold text-brand">Terms of Service</Text> and{" "}
           <Text className="font-outfit-bold text-brand">Privacy Policy</Text>.
         </Text>
       </View>
 
-      {error ? <Text className="pb-3 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+      {error ? <Text className="pb-3 text-center text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
       <Button label="Create Account" onPress={handleCreateAccount} loading={loading} />
 
@@ -162,9 +162,9 @@ export function SignUpScreen({ navigation }: Props) {
       </View>
 
       <View className="flex-row items-center justify-center gap-[6px] pt-5">
-        <Text className="font-outfit text-[13px] text-muted">Already have an account?</Text>
-        <Pressable onPress={() => navigation.navigate("SignIn")}>
-          <Text className="font-outfit-bold text-[13px] text-brand">Sign In</Text>
+        <Text className="text-subhead font-outfit text-muted">Already have an account?</Text>
+        <Pressable onPress={() => navigation.navigate("SignIn")} hitSlop={12}>
+          <Text className="text-subhead font-outfit-bold text-brand">Sign In</Text>
         </Pressable>
       </View>
 

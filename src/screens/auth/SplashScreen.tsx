@@ -19,14 +19,14 @@ export function SplashScreen({ navigation }: Props) {
       </View>
       <View className="items-center gap-[10px]">
         <View className="flex-row items-center gap-2">
-          <Text className="font-outfit-bold text-[13px] tracking-[0.52px] text-body">Fast.</Text>
-          <Text className="font-outfit-bold text-[13px] tracking-[0.52px] text-body">Secure.</Text>
-          <Text className="font-outfit text-[13px] tracking-[0.13px] text-[#6B7280]">Reliable Logistics.</Text>
+          <Text className="text-subhead font-outfit-bold tracking-[0.52px] text-body">Fast.</Text>
+          <Text className="text-subhead font-outfit-bold tracking-[0.52px] text-body">Secure.</Text>
+          <Text className="text-subhead font-outfit tracking-[0.13px] text-[#6B7280]">Reliable Logistics.</Text>
         </View>
         <View className="h-[3px] w-9 overflow-hidden rounded-full bg-[#E5EAE7]">
           <View className="h-[3px] w-[35px] rounded-full bg-brand" />
         </View>
-        <Text className="font-outfit text-[11px] text-[#A8B5AC]">© 2024 D.O Naija Cargo.</Text>
+        <Text className="text-caption font-outfit text-[#A8B5AC]">© 2024 D.O Naija Cargo.</Text>
       </View>
     </View>
   );

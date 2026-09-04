@@ -7,19 +7,27 @@ import type { HomeStackParamList, MainTabParamList } from "../../navigation/type
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { AppHeader } from "../../ui/AppHeader";
 import { WireframeBox } from "../../ui/WireframeBox";
+import { useSettings } from "../../settings/SettingsContext";
+import type { TranslationKey } from "../../lib/i18n";
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, "Home">,
   BottomTabScreenProps<MainTabParamList>
 >;
 
-const GRID_ITEMS = [
-  { key: "ship", icon: "box" as const, family: "feather" as const, title: "Ship Cargo", desc: "Send your cargo easily" },
-  { key: "track", icon: "map-pin" as const, family: "feather" as const, title: "Track Shipment", desc: "Track your cargo in real time" },
-  { key: "myshipments", icon: "clipboard" as const, family: "feather" as const, title: "My Shipments", desc: "View and manage your shipments" },
-  { key: "riding", icon: "moped" as const, family: "mci" as const, title: "Dispatch Riding", desc: "Book a rider for fast dispatch" },
-  { key: "haulage", icon: "truck" as const, family: "feather" as const, title: "Haulage", desc: "Move heavy loads & bulk cargo" },
-  { key: "shop", icon: "shopping-bag" as const, family: "feather" as const, title: "Shop", desc: "Order goods, we deliver them" },
+const GRID_ITEMS: {
+  key: string;
+  icon: string;
+  family: "feather" | "mci";
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+}[] = [
+  { key: "ship", icon: "box", family: "feather", titleKey: "shipCargoTitle", descKey: "shipCargoDesc" },
+  { key: "track", icon: "map-pin", family: "feather", titleKey: "trackShipmentTitle", descKey: "trackShipmentDesc" },
+  { key: "myshipments", icon: "clipboard", family: "feather", titleKey: "myShipmentsTitle", descKey: "myShipmentsDesc" },
+  { key: "riding", icon: "moped", family: "mci", titleKey: "dispatchRidingTitle", descKey: "dispatchRidingDesc" },
+  { key: "haulage", icon: "truck", family: "feather", titleKey: "haulageTitle", descKey: "haulageDesc" },
+  { key: "shop", icon: "shopping-bag", family: "feather", titleKey: "shopTitle", descKey: "shopDesc" },
 ];
 
 function GridIcon({ family, name }: { family: "feather" | "mci"; name: string }) {
@@ -31,6 +39,7 @@ function GridIcon({ family, name }: { family: "feather" | "mci"; name: string })
 }
 
 export function HomeScreen({ navigation }: Props) {
+  const { t } = useSettings();
   const handlePress = (key: string) => {
     switch (key) {
       case "ship":
@@ -62,8 +71,8 @@ export function HomeScreen({ navigation }: Props) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pb-6 pt-2">
         <View className="overflow-hidden rounded-[20px] bg-brand px-6 py-5">
           <View className="absolute -right-5 -top-5 size-[180px] rounded-full bg-white/[0.04]" />
-          <Text className="font-outfit text-[14px] text-white/70">Welcome back,</Text>
-          <Text className="pt-[2px] font-outfit-extrabold text-[30px] text-white">Welcome!</Text>
+          <Text className="text-subhead font-outfit text-white/70">{t("welcomeBack")}</Text>
+          <Text className="pt-1 text-largeTitle font-outfit-extrabold text-white">{t("welcome")}</Text>
           <View className="absolute right-6 top-5">
             <WireframeBox />
           </View>
@@ -74,25 +83,23 @@ export function HomeScreen({ navigation }: Props) {
             <Pressable
               key={item.key}
               onPress={() => handlePress(item.key)}
-              className="w-[47.5%] justify-center rounded-[18px] border-[0.661px] border-[rgba(27,67,50,0.06)] bg-surface px-4 pb-4 pt-[18px]"
+              className="w-[47.5%] justify-center rounded-[18px] border-[0.661px] border-[rgba(27,67,50,0.06)] bg-surface px-4 py-4 active:opacity-70"
             >
               <GridIcon family={item.family} name={item.icon} />
-              <Text className="pt-3 font-outfit-bold text-[14px] text-ink">{item.title}</Text>
-              <Text className="pt-[3px] font-outfit text-[11.5px] text-muted">{item.desc}</Text>
+              <Text className="pt-3 text-headline font-outfit-semibold text-ink">{t(item.titleKey)}</Text>
+              <Text className="pt-1 text-footnote font-outfit text-muted">{t(item.descKey)}</Text>
             </Pressable>
           ))}
         </View>
 
         <Pressable
           onPress={() => navigation.getParent()?.navigate("RidingTab")}
-          className="mt-4 h-[130px] flex-row overflow-hidden rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.07)] bg-[#EEF1EF]"
+          className="mt-4 h-[130px] flex-row overflow-hidden rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.07)] bg-[#EEF1EF] active:opacity-70"
         >
           <View className="flex-1 justify-between p-5">
             <View>
-              <Text className="font-outfit-extrabold text-[18px] leading-[21.6px] text-ink">Dispatch{"\n"}Riding</Text>
-              <Text className="w-[150px] pt-[6px] font-outfit text-[11.5px] leading-[17.25px] text-muted">
-                Need something delivered fast? Book a rider in minutes.
-              </Text>
+              <Text className="text-title font-outfit-bold text-ink">{t("dispatchPromoTitle")}</Text>
+              <Text className="w-[150px] pt-1 text-footnote font-outfit text-muted">{t("dispatchPromoDesc")}</Text>
             </View>
           </View>
           <View className="w-[155px] overflow-hidden">

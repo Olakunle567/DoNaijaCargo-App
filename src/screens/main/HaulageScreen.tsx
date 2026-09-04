@@ -68,7 +68,7 @@ export function HaulageScreen({ navigation }: Props) {
         className="flex-row items-center gap-2 rounded-2xl bg-brand px-4 py-3 shadow-lg"
       >
         <Feather name="check-circle" size={18} color="#fff" />
-        <Text className="flex-1 font-outfit-semibold text-[12.5px] text-white">
+        <Text className="flex-1 text-footnote font-outfit-semibold text-white">
           Request sent — a consultant will call within 2 hours.
         </Text>
       </Animated.View>
@@ -82,7 +82,7 @@ export function HaulageScreen({ navigation }: Props) {
               <Pressable
                 key={t.key}
                 onPress={() => setTruckType(t.key)}
-                className={`flex-1 items-center gap-[6px] rounded-2xl border-[1.984px] px-2 py-3 ${
+                className={`flex-1 items-center gap-[6px] rounded-2xl border-[1.984px] px-2 py-3 active:opacity-70 ${
                   active ? "border-brand bg-[rgba(27,67,50,0.05)]" : "border-border-brand bg-surface"
                 }`}
               >
@@ -123,7 +123,7 @@ export function HaulageScreen({ navigation }: Props) {
                 <Pressable
                   key={w}
                   onPress={() => setWeightRange(w)}
-                  className={`rounded-full border-[1.322px] px-[14px] py-[7px] ${
+                  className={`rounded-full border-[1.322px] px-[14px] py-[7px] active:opacity-70 ${
                     active ? "border-brand bg-brand" : "border-[rgba(27,67,50,0.15)] bg-white"
                   }`}
                 >
@@ -142,15 +142,15 @@ export function HaulageScreen({ navigation }: Props) {
 
       <View className="mt-[14px] flex-row items-start gap-[10px] rounded-2xl border-[0.661px] border-[rgba(30,58,95,0.09)] bg-[rgba(30,58,95,0.05)] px-[15px] py-3">
         <Feather name="info" size={18} color="#374151" style={{ marginTop: 1 }} />
-        <Text className="flex-1 font-outfit text-[11.5px] leading-[17.825px] text-body">
+        <Text className="flex-1 text-footnote font-outfit text-body">
           A haulage consultant will call you within 2 hours of booking to confirm pricing and logistics.
         </Text>
       </View>
 
-      {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+      {error ? <Text className="pt-4 text-center text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
       <View className="py-5">
-        <Button label="REQUEST HAULAGE" onPress={handleRequest} loading={submitting} />
+        <Button label="Request Haulage" onPress={handleRequest} loading={submitting} />
       </View>
     </ScreenContainer>
   );

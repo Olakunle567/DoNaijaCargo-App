@@ -97,7 +97,7 @@ export function PaymentMethodsScreen({ navigation }: Props) {
             <Pressable
               key={c.id}
               onPress={() => setDefaultId(c.id)}
-              className={`flex-row items-center gap-3 rounded-2xl border-[1.322px] px-4 py-[14px] ${
+              className={`flex-row items-center gap-3 rounded-2xl border-[1.322px] px-4 py-[14px] active:opacity-70 ${
                 isDefault ? "border-brand bg-[#EEF1EF]" : "border-border-brand bg-white"
               }`}
             >
@@ -122,7 +122,7 @@ export function PaymentMethodsScreen({ navigation }: Props) {
 
         <Pressable
           onPress={() => setAddOpen(true)}
-          className="flex-row items-center justify-center gap-2 rounded-2xl border-[1.322px] border-dashed border-border-brand py-[14px]"
+          className="flex-row items-center justify-center gap-2 rounded-2xl border-[1.322px] border-dashed border-border-brand py-[14px] active:opacity-70"
         >
           <Feather name="plus" size={17} color="#1B4332" />
           <Text className="font-outfit-bold text-[13px] text-brand">Add New Card</Text>
@@ -135,7 +135,7 @@ export function PaymentMethodsScreen({ navigation }: Props) {
             <View className="items-center pb-1">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
-            <Text className="font-outfit-extrabold text-[17px] text-ink">Add New Card</Text>
+            <Text className="text-headline font-outfit-semibold text-ink">Add New Card</Text>
 
             <View className="flex-row items-center gap-3 rounded-xl border-[1.322px] border-border-brand bg-surface px-[15px] py-[13px]">
               <Feather name="credit-card" size={18} color="#374151" />
@@ -184,7 +184,7 @@ export function PaymentMethodsScreen({ navigation }: Props) {
               />
             </View>
 
-            {error ? <Text className="font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+            {error ? <Text className="text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
             <View className="pt-1">
               <Button label="Save Card" onPress={handleAddCard} />

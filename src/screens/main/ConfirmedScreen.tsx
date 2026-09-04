@@ -27,8 +27,8 @@ export function ConfirmedScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        <Text className="pb-2 text-center font-outfit-extrabold text-[24px] text-ink">Booking Confirmed!</Text>
-        <Text className="pb-7 text-center font-outfit text-[13.5px] leading-[21.6px] text-muted">
+        <Text className="pb-2 text-center text-largeTitle font-outfit-extrabold text-ink">Booking Confirmed!</Text>
+        <Text className="pb-7 text-center text-body font-outfit text-muted">
           Your shipment has been booked successfully. A pickup agent will contact you within 24 hours.
         </Text>
 
@@ -40,7 +40,7 @@ export function ConfirmedScreen({ navigation, route }: Props) {
               <Feather name={copied ? "check" : "copy"} size={16} color="#1B4332" />
             </Pressable>
           </View>
-          {copied ? <Text className="pt-1 font-outfit-semibold text-[10.5px] text-brand">Copied!</Text> : null}
+          {copied ? <Text className="pt-1 text-caption font-outfit-semibold text-brand">Copied!</Text> : null}
         </View>
 
         <View className="w-full">

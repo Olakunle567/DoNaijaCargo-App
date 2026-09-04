@@ -17,6 +17,7 @@ import {
 import { AuthNavigator } from "./src/navigation/AuthNavigator";
 import { MainTabNavigator } from "./src/navigation/MainTabNavigator";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
+import { SettingsProvider } from "./src/settings/SettingsContext";
 
 SplashScreenModule.preventAutoHideAsync();
 
@@ -49,12 +50,14 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayout}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </NavigationContainer>
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <NavigationContainer>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </NavigationContainer>
+          </AuthProvider>
+        </SettingsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

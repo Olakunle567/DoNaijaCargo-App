@@ -9,6 +9,8 @@ import { BobbingPin } from "../../ui/BobbingPin";
 import { Button } from "../../ui/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { requestRide, VEHICLE_RATE_PREVIEW } from "../../rides/api";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "Ride">;
 
@@ -27,6 +29,7 @@ const NEARBY_RIDERS = [
 ] as const;
 
 export function RideScreen({ navigation }: Props) {
+  const { currency } = useSettings();
   const [vehicle, setVehicle] = useState<(typeof VEHICLES)[number]["key"]>("bike");
   const [pickup, setPickup] = useState("15 Adeola Odeku St, VI");
   const [destination, setDestination] = useState("");
@@ -77,7 +80,7 @@ export function RideScreen({ navigation }: Props) {
         <View className="items-center">
           <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
         </View>
-        <Text className="pt-4 font-outfit-extrabold text-[16px] text-ink">Book a Rider</Text>
+        <Text className="pt-4 text-headline font-outfit-semibold text-ink">Book a Rider</Text>
 
         <View className="mt-[14px] gap-2">
           <View className="flex-row items-center gap-2 rounded-xl border-[1.322px] border-border-brand bg-surface px-[13px] py-[11px]">
@@ -102,7 +105,7 @@ export function RideScreen({ navigation }: Props) {
             />
           </View>
         </View>
-        {error ? <Text className="pt-2 font-outfit-semibold text-[12px] text-[#DC2626]">{error}</Text> : null}
+        {error ? <Text className="pt-2 text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
         <Text className="pt-4 font-outfit-semibold text-[11px] tracking-[0.55px] text-muted">VEHICLE TYPE</Text>
         <View className="mt-2 flex-row gap-2">
@@ -112,7 +115,7 @@ export function RideScreen({ navigation }: Props) {
               <Pressable
                 key={v.key}
                 onPress={() => setVehicle(v.key)}
-                className={`flex-1 items-center gap-1 rounded-xl border-[1.984px] px-[6px] py-[10px] ${
+                className={`flex-1 items-center gap-1 rounded-xl border-[1.984px] px-[6px] py-[10px] active:opacity-70 ${
                   active ? "border-brand bg-[rgba(27,67,50,0.06)]" : "border-border-brand bg-surface"
                 }`}
               >
@@ -127,7 +130,7 @@ export function RideScreen({ navigation }: Props) {
         <View className="mt-[14px] flex-row items-center justify-between rounded-xl border-[0.661px] border-[rgba(27,67,50,0.07)] bg-surface px-[14px] py-3">
           <View>
             <Text className="font-outfit-semibold text-[10px] tracking-[0.4px] text-muted">PRICE ESTIMATE</Text>
-            <Text className="font-outfit-extrabold text-[20px] text-ink">₦{preview.priceEstimate.toLocaleString("en-NG")}</Text>
+            <Text className="font-outfit-extrabold text-[20px] text-ink">{formatCurrency(preview.priceEstimate, currency)}</Text>
           </View>
           <View className="items-end">
             <Text className="font-outfit-semibold text-[10px] tracking-[0.4px] text-muted">ETA</Text>
@@ -136,7 +139,7 @@ export function RideScreen({ navigation }: Props) {
         </View>
 
         <View className="pt-[14px]">
-          <Button label="REQUEST RIDER" onPress={handleRequest} loading={requesting} />
+          <Button label="Request Rider" onPress={handleRequest} loading={requesting} />
         </View>
       </View>
     </View>

@@ -6,12 +6,10 @@ import { ScreenContainer } from "../../ui/ScreenContainer";
 import { BackHeader } from "../../ui/BackHeader";
 import { useOrders } from "../../orders/api";
 import { useShipments } from "../../shipments/useShipments";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "OrderHistory">;
-
-function formatNaira(n: number) {
-  return `₦${n.toLocaleString("en-NG")}`;
-}
 
 function formatDate(timestamp: { toDate: () => Date } | null) {
   if (!timestamp) return "—";
@@ -34,6 +32,7 @@ function CardSkeleton() {
 }
 
 export function OrderHistoryScreen({ navigation }: Props) {
+  const { currency } = useSettings();
   const { orders, loading: ordersLoading } = useOrders();
   const { shipments, loading: shipmentsLoading } = useShipments();
   const deliveredShipments = shipments.filter((s) => s.status === "Delivered");
@@ -76,7 +75,7 @@ export function OrderHistoryScreen({ navigation }: Props) {
               </View>
               <View className="mt-3 flex-row items-center justify-between border-t-[0.661px] border-[rgba(27,67,50,0.08)] pt-3">
                 <Text className="font-outfit text-[12px] text-muted">Total</Text>
-                <Text className="font-outfit-bold text-[14px] text-brand">{formatNaira(o.total)}</Text>
+                <Text className="font-outfit-bold text-[14px] text-brand">{formatCurrency(o.total, currency)}</Text>
               </View>
             </View>
           ))}

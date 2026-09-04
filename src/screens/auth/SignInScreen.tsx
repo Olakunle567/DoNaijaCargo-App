@@ -89,8 +89,8 @@ export function SignInScreen({ navigation }: Props) {
       </View>
 
       <View className="pt-2">
-        <Text className="font-outfit-extrabold text-[28px] text-ink">Welcome Back!</Text>
-        <Text className="pt-2 font-outfit text-[13.5px] text-muted">
+        <Text className="text-largeTitle font-outfit-extrabold text-ink">Welcome Back!</Text>
+        <Text className="pt-2 text-subhead font-outfit text-muted">
           Sign in to manage your shipments and dispatch rides.
         </Text>
       </View>
@@ -107,11 +107,11 @@ export function SignInScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Pressable className="items-end py-3" onPress={() => setForgotOpen(true)}>
-        <Text className="font-outfit-semibold text-[12.5px] text-brand">Forgot Password?</Text>
+      <Pressable className="items-end py-3" onPress={() => setForgotOpen(true)} hitSlop={8}>
+        <Text className="text-footnote font-outfit-semibold text-brand">Forgot Password?</Text>
       </Pressable>
 
-      {error ? <Text className="pb-3 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+      {error ? <Text className="pb-3 text-center text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
       <View className="pt-3">
         <Button label="Sign In" onPress={handleSignIn} loading={loading} disabled={!canSubmit} />
@@ -143,9 +143,9 @@ export function SignInScreen({ navigation }: Props) {
       </View>
 
       <View className="flex-row items-center justify-center gap-[6px] pt-7">
-        <Text className="font-outfit text-[13px] text-muted">Don't have an account?</Text>
-        <Pressable onPress={() => navigation.navigate("SignUp")}>
-          <Text className="font-outfit-bold text-[13px] text-brand">Sign Up</Text>
+        <Text className="text-subhead font-outfit text-muted">Don't have an account?</Text>
+        <Pressable onPress={() => navigation.navigate("SignUp")} hitSlop={12}>
+          <Text className="text-subhead font-outfit-bold text-brand">Sign Up</Text>
         </Pressable>
       </View>
 
@@ -160,8 +160,8 @@ export function SignInScreen({ navigation }: Props) {
                 <View className="mb-3 size-14 items-center justify-center rounded-full bg-[rgba(27,67,50,0.08)]">
                   <Feather name="check" size={24} color="#1B4332" />
                 </View>
-                <Text className="pb-1 font-outfit-extrabold text-[17px] text-ink">Check your email</Text>
-                <Text className="pb-5 text-center font-outfit text-[13px] text-muted">
+                <Text className="pb-1 text-headline font-outfit-semibold text-ink">Check your email</Text>
+                <Text className="pb-5 text-center text-subhead font-outfit text-muted">
                   If an account exists for {resetEmail || "that address"}, a reset link is on its way.
                 </Text>
                 <View className="w-full">
@@ -170,8 +170,8 @@ export function SignInScreen({ navigation }: Props) {
               </View>
             ) : (
               <>
-                <Text className="pb-1 font-outfit-extrabold text-[17px] text-ink">Reset your password</Text>
-                <Text className="pb-4 font-outfit text-[13px] text-muted">
+                <Text className="pb-1 text-headline font-outfit-semibold text-ink">Reset your password</Text>
+                <Text className="pb-4 text-subhead font-outfit text-muted">
                   Enter the email on your account and we'll send a reset link.
                 </Text>
                 <TextField icon="mail" placeholder="you@example.com" value={resetEmail} onChangeText={setResetEmail} keyboardType="email-address" />

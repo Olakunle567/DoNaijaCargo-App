@@ -86,8 +86,8 @@ export function TrackScreen() {
         <AppHeader />
       </View>
       <View className="px-4 pt-4">
-        <Text className="font-outfit-extrabold text-[22px] text-ink">Track Shipment</Text>
-        <Text className="pt-[2px] font-outfit text-[13px] text-muted">Real-time cargo tracking</Text>
+        <Text className="text-title font-outfit-bold text-ink">Track Shipment</Text>
+        <Text className="pt-1 text-subhead font-outfit text-muted">Real-time cargo tracking</Text>
 
         <View className="mt-4 h-[150px] overflow-hidden rounded-2xl border-[0.661px] border-border-brand">
           <MapIllustration width={358} height={150} />
@@ -122,18 +122,23 @@ export function TrackScreen() {
             autoCapitalize="characters"
             returnKeyType="search"
           />
-          <Pressable onPress={handleTrack} disabled={loading} className="min-w-[64px] items-center rounded-[10px] bg-brand px-[14px] py-[7px]">
-            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text className="font-outfit-extrabold text-[12px] tracking-[0.72px] text-white">TRACK</Text>}
+          <Pressable
+            onPress={handleTrack}
+            disabled={loading}
+            hitSlop={8}
+            className="min-w-[64px] items-center rounded-[10px] bg-brand px-[14px] py-[7px] active:opacity-70"
+          >
+            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text className="text-footnote font-outfit-extrabold tracking-[0.72px] text-white">Track</Text>}
           </Pressable>
         </View>
         {notFound ? (
-          <Text className="pt-2 font-outfit-semibold text-[12px] text-[#DC2626]">No shipment found for that tracking ID.</Text>
+          <Text className="pt-2 text-footnote font-outfit-semibold text-[#DC2626]">No shipment found for that tracking ID.</Text>
         ) : null}
 
         {!activeTrackingRef ? (
           <View className="mt-4 items-center rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.08)] bg-surface p-8">
-            <Feather name="search" size={28} color="#8A9A92" />
-            <Text className="pt-3 text-center font-outfit text-[13px] text-muted">
+            <Feather name="search" size={28} color="#697971" />
+            <Text className="pt-3 text-center text-subhead font-outfit text-muted">
               Enter a tracking ID above to see live status and milestones.
             </Text>
           </View>
@@ -145,8 +150,8 @@ export function TrackScreen() {
               <View className="flex-row items-start justify-between">
                 <View>
                   <Text className="font-outfit-semibold text-[11px] tracking-[0.55px] text-muted">TRACKING ID · {shipment.trackingRef}</Text>
-                  <Text className="pt-1 font-outfit-extrabold text-[18px] text-ink">Status:</Text>
-                  <Text className="font-outfit-extrabold text-[18px] text-brand">{shipment.status}</Text>
+                  <Text className="pt-1 text-headline font-outfit-semibold text-ink">Status:</Text>
+                  <Text className="text-headline font-outfit-semibold text-brand">{shipment.status}</Text>
                   <View className="mt-2 flex-row items-center gap-[6px] self-start rounded-full bg-[rgba(27,67,50,0.09)] px-3 py-[5px]">
                     <View className="size-[7px] rounded-full bg-brand" />
                     <Text className="font-outfit-bold text-[12px] text-brand">
@@ -181,10 +186,10 @@ export function TrackScreen() {
                   <View key={step.label} className="flex-row items-start gap-4">
                     <MilestoneBullet state={step.state} />
                     <View className="flex-1 pt-px">
-                      <Text className={`font-outfit-bold text-[13px] ${step.state === "pending" ? "text-[#9CA3AF]" : "text-ink"}`}>
+                      <Text className={`text-subhead font-outfit-bold ${step.state === "pending" ? "text-[#9CA3AF]" : "text-ink"}`}>
                         {step.label}
                       </Text>
-                      <Text className="pt-[2px] font-outfit text-[11px] text-muted">{formatMilestoneDetail(step)}</Text>
+                      <Text className="pt-[2px] text-footnote font-outfit text-muted">{formatMilestoneDetail(step)}</Text>
                     </View>
                   </View>
                 ))}

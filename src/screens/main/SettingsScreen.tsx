@@ -7,6 +7,9 @@ import { ScreenContainer } from "../../ui/ScreenContainer";
 import { BackHeader } from "../../ui/BackHeader";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
+import { useSettings } from "../../settings/SettingsContext";
+import { CURRENCIES, CURRENCY_CODES, type CurrencyCode } from "../../lib/currency";
+import { LANGUAGES as LANGUAGE_OPTIONS, type LanguageCode } from "../../lib/i18n";
 
 type Props = NativeStackScreenProps<AccountStackParamList, "Settings">;
 
@@ -29,8 +32,8 @@ function Row({
         <Feather name={icon} size={18} color="#1B4332" />
       </View>
       <View className="flex-1">
-        <Text className="font-outfit-semibold text-[14px] text-ink">{title}</Text>
-        <Text className="font-outfit text-[11.5px] text-muted">{desc}</Text>
+        <Text className="text-headline font-outfit-semibold text-ink">{title}</Text>
+        <Text className="text-footnote font-outfit text-muted">{desc}</Text>
       </View>
       <Switch value={value} onValueChange={onValueChange} trackColor={{ false: "#D1D5DB", true: "#1B4332" }} thumbColor="#fff" />
     </View>
@@ -48,18 +51,14 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-const CURRENCIES = ["NGN (₦)", "USD ($)", "GBP (£)"];
-const LANGUAGES = ["English", "Yoruba", "Hausa", "Igbo"];
-
 export function SettingsScreen({ navigation }: Props) {
+  const { currency, setCurrency, language, setLanguage, t } = useSettings();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [biometric, setBiometric] = useState(false);
 
-  const [currency, setCurrency] = useState(CURRENCIES[0]);
   const [currencyOpen, setCurrencyOpen] = useState(false);
-  const [language, setLanguage] = useState(LANGUAGES[0]);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -97,7 +96,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer scroll>
-      <BackHeader title="Settings" subtitle="App preferences & notifications" onBack={() => navigation.goBack()} />
+      <BackHeader title={t("settings")} subtitle="App preferences & notifications" onBack={() => navigation.goBack()} />
 
       <SectionCard title="NOTIFICATIONS">
         <Row icon="bell" title="Push Notifications" desc="Shipment & rider updates" value={pushEnabled} onValueChange={setPushEnabled} />
@@ -107,48 +106,48 @@ export function SettingsScreen({ navigation }: Props) {
 
       <SectionCard title="SECURITY">
         <Row icon="lock" title="Biometric Login" desc="Use Face ID / fingerprint to sign in" value={biometric} onValueChange={setBiometric} />
-        <Pressable onPress={() => setPasswordOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px]">
+        <Pressable onPress={() => setPasswordOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px] active:opacity-70">
           <View className="size-9 items-center justify-center rounded-xl bg-[rgba(27,67,50,0.07)]">
             <Feather name="key" size={18} color="#1B4332" />
           </View>
           <View className="flex-1">
-            <Text className="font-outfit-semibold text-[14px] text-ink">Change Password</Text>
-            <Text className="font-outfit text-[11.5px] text-muted">Update your account password</Text>
+            <Text className="text-headline font-outfit-semibold text-ink">Change Password</Text>
+            <Text className="text-footnote font-outfit text-muted">Update your account password</Text>
           </View>
           <Feather name="chevron-right" size={18} color="#9CA3AF" />
         </Pressable>
       </SectionCard>
 
       <SectionCard title="PREFERENCES">
-        <Pressable onPress={() => setCurrencyOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px]">
+        <Pressable onPress={() => setCurrencyOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px] active:opacity-70">
           <View className="size-9 items-center justify-center rounded-xl bg-[rgba(27,67,50,0.07)]">
             <Feather name="dollar-sign" size={18} color="#1B4332" />
           </View>
-          <Text className="flex-1 font-outfit-semibold text-[14px] text-ink">Currency</Text>
-          <Text className="font-outfit text-[13px] text-muted">{currency}</Text>
+          <Text className="flex-1 text-headline font-outfit-semibold text-ink">Currency</Text>
+          <Text className="text-subhead font-outfit text-muted">{CURRENCIES[currency].label}</Text>
           <Feather name="chevron-right" size={18} color="#9CA3AF" />
         </Pressable>
-        <Pressable onPress={() => setLanguageOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px]">
+        <Pressable onPress={() => setLanguageOpen(true)} className="flex-row items-center gap-3 px-4 py-[13px] active:opacity-70">
           <View className="size-9 items-center justify-center rounded-xl bg-[rgba(27,67,50,0.07)]">
             <Feather name="globe" size={18} color="#1B4332" />
           </View>
-          <Text className="flex-1 font-outfit-semibold text-[14px] text-ink">Language</Text>
-          <Text className="font-outfit text-[13px] text-muted">{language}</Text>
+          <Text className="flex-1 text-headline font-outfit-semibold text-ink">Language</Text>
+          <Text className="text-subhead font-outfit text-muted">{LANGUAGE_OPTIONS.find((l) => l.code === language)?.label}</Text>
           <Feather name="chevron-right" size={18} color="#9CA3AF" />
         </Pressable>
       </SectionCard>
 
       <SectionCard title="ABOUT">
         <View className="flex-row items-center justify-between px-4 py-[13px]">
-          <Text className="font-outfit-semibold text-[14px] text-ink">App Version</Text>
-          <Text className="font-outfit text-[13px] text-muted">1.4.2</Text>
+          <Text className="text-headline font-outfit-semibold text-ink">App Version</Text>
+          <Text className="text-subhead font-outfit text-muted">1.4.2</Text>
         </View>
         <View className="flex-row items-center justify-between px-4 py-[13px]">
-          <Text className="font-outfit-semibold text-[14px] text-ink">Terms of Service</Text>
+          <Text className="text-headline font-outfit-semibold text-ink">Terms of Service</Text>
           <Feather name="external-link" size={16} color="#9CA3AF" />
         </View>
         <View className="flex-row items-center justify-between px-4 py-[13px]">
-          <Text className="font-outfit-semibold text-[14px] text-ink">Privacy Policy</Text>
+          <Text className="text-headline font-outfit-semibold text-ink">Privacy Policy</Text>
           <Feather name="external-link" size={16} color="#9CA3AF" />
         </View>
       </SectionCard>
@@ -160,18 +159,20 @@ export function SettingsScreen({ navigation }: Props) {
             <View className="items-center pb-4">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
-            <Text className="pb-3 font-outfit-extrabold text-[16px] text-ink">Select Currency</Text>
-            {CURRENCIES.map((c) => (
+            <Text className="pb-3 text-headline font-outfit-semibold text-ink">Select Currency</Text>
+            {CURRENCY_CODES.map((code) => (
               <Pressable
-                key={c}
+                key={code}
                 onPress={() => {
-                  setCurrency(c);
+                  setCurrency(code);
                   setCurrencyOpen(false);
                 }}
                 className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-[14px]"
               >
-                <Text className={`font-outfit-semibold text-[14px] ${c === currency ? "text-brand" : "text-ink"}`}>{c}</Text>
-                {c === currency ? <Feather name="check" size={18} color="#1B4332" /> : null}
+                <Text className={`font-outfit-semibold text-[14px] ${code === currency ? "text-brand" : "text-ink"}`}>
+                  {CURRENCIES[code].label}
+                </Text>
+                {code === currency ? <Feather name="check" size={18} color="#1B4332" /> : null}
               </Pressable>
             ))}
           </Pressable>
@@ -185,18 +186,18 @@ export function SettingsScreen({ navigation }: Props) {
             <View className="items-center pb-4">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
-            <Text className="pb-3 font-outfit-extrabold text-[16px] text-ink">Select Language</Text>
-            {LANGUAGES.map((l) => (
+            <Text className="pb-3 text-headline font-outfit-semibold text-ink">Select Language</Text>
+            {LANGUAGE_OPTIONS.map((l) => (
               <Pressable
-                key={l}
+                key={l.code}
                 onPress={() => {
-                  setLanguage(l);
+                  setLanguage(l.code);
                   setLanguageOpen(false);
                 }}
                 className="flex-row items-center justify-between border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-[14px]"
               >
-                <Text className={`font-outfit-semibold text-[14px] ${l === language ? "text-brand" : "text-ink"}`}>{l}</Text>
-                {l === language ? <Feather name="check" size={18} color="#1B4332" /> : null}
+                <Text className={`font-outfit-semibold text-[14px] ${l.code === language ? "text-brand" : "text-ink"}`}>{l.label}</Text>
+                {l.code === language ? <Feather name="check" size={18} color="#1B4332" /> : null}
               </Pressable>
             ))}
           </Pressable>

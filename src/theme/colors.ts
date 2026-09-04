@@ -3,7 +3,8 @@ export const colors = {
   brandDark: "#132D22",
   ink: "#111827",
   body: "#374151",
-  muted: "#8A9A92",
+  // Darkened from #8A9A92 (same hue/saturation) to clear WCAG AA 4.5:1 on white.
+  muted: "#697971",
   placeholder: "#99A1AF",
   surface: "#F3F5F4",
   border: "#E5E7EB",

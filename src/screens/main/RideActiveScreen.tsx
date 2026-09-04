@@ -10,12 +10,15 @@ import { PulsingMarker } from "../../ui/PulsingMarker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useChat } from "../../chat/ChatContext";
 import { useRide } from "../../rides/useRide";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<RidingStackParamList, "RideActive">;
 
 const RIDER_PHONE = "+2348012345678";
 
 export function RideActiveScreen({ navigation, route }: Props) {
+  const { currency } = useSettings();
   const [sheet, setSheet] = useState<"none" | "contact" | "cancel">("none");
   const [message, setMessage] = useState("");
   const { unreadCount, sendMessage } = useChat();
@@ -239,7 +242,7 @@ export function RideActiveScreen({ navigation, route }: Props) {
                 <Text className="pb-2 text-center text-[36px]">⚠️</Text>
                 <Text className="pb-2 text-center font-outfit-extrabold text-[18px] text-ink">Cancel this ride?</Text>
                 <Text className="pb-5 text-center font-outfit text-[13px] leading-[19px] text-muted">
-                  {matched && rider ? `${rider.name} is already on the way. ` : ""}A ₦500 cancellation fee may apply.
+                  {matched && rider ? `${rider.name} is already on the way. ` : ""}A {formatCurrency(500, currency)} cancellation fee may apply.
                 </Text>
                 <View className="flex-row gap-3">
                   <Pressable

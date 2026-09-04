@@ -83,7 +83,7 @@ export function MyShipmentsScreen({ navigation }: Props) {
             <Pressable
               key={f}
               onPress={() => setFilter(f)}
-              className={`rounded-full px-4 py-[7px] ${active ? "bg-brand" : "bg-surface"}`}
+              className={`rounded-full px-4 py-[7px] active:opacity-70 ${active ? "bg-brand" : "bg-surface"}`}
             >
               <Text className={`font-outfit-semibold text-[12px] ${active ? "text-white" : "text-muted"}`}>{f}</Text>
             </Pressable>
@@ -101,7 +101,7 @@ export function MyShipmentsScreen({ navigation }: Props) {
         ) : (
           <>
             {filtered.length === 0 ? (
-              <Text className="pt-8 text-center font-outfit text-[13px] text-muted">
+              <Text className="pt-8 text-center text-subhead font-outfit text-muted">
                 {shipments.length === 0 ? "No shipments yet. Book one from Ship Cargo." : "No shipments match your search."}
               </Text>
             ) : null}
@@ -111,7 +111,7 @@ export function MyShipmentsScreen({ navigation }: Props) {
                 <Pressable
                   key={s.id}
                   onPress={() => navigation.getParent()?.navigate("TrackingTab")}
-                  className="rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.08)] bg-white px-4 py-[15px]"
+                  className="rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.08)] bg-white px-4 py-[15px] active:opacity-70"
                 >
                   <View className="flex-row items-start justify-between">
                     <View>

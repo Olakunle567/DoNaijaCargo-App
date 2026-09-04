@@ -1,5 +1,6 @@
 import { Pressable, Text, View, ActivityIndicator } from "react-native";
 import type { ReactNode } from "react";
+import * as Haptics from "expo-haptics";
 
 type ButtonProps = {
   label: string;
@@ -23,11 +24,16 @@ const labelStyles = {
 };
 
 export function Button({ label, onPress, variant = "primary", icon, loading, disabled }: ButtonProps) {
+  const handlePress = () => {
+    if (variant === "primary") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
-      className={`flex-row items-center justify-center gap-[10px] rounded-xl py-[13px] ${variantStyles[variant]} ${disabled ? "opacity-50" : ""}`}
+      className={`flex-row items-center justify-center gap-[10px] rounded-xl py-[13px] active:opacity-70 ${variantStyles[variant]} ${disabled ? "opacity-50" : ""}`}
     >
       {loading ? (
         <ActivityIndicator color={variant === "primary" || variant === "dark" ? "#FFFFFF" : "#1B4332"} />

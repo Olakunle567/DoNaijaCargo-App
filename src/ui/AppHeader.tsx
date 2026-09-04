@@ -4,6 +4,9 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { LogoMark } from "./Logo";
 import { useAuth } from "../auth/AuthContext";
+import { useSettings } from "../settings/SettingsContext";
+import { formatCurrency } from "../lib/currency";
+import type { TranslationKey } from "../lib/i18n";
 
 function navigateToTab(navigation: any, tabName: string) {
   const parent = navigation.getParent?.();
@@ -11,26 +14,27 @@ function navigateToTab(navigation: any, tabName: string) {
   else navigation.navigate(tabName);
 }
 
-const MENU_LINKS = [
-  { tab: "HomeTab", icon: "home", label: "Home" },
-  { tab: "ShipTab", icon: "box", label: "Ship Cargo" },
-  { tab: "TrackingTab", icon: "map-pin", label: "Track Shipment" },
-  { tab: "RidingTab", icon: "truck", label: "Dispatch Riding" },
-  { tab: "AccountTab", icon: "user", label: "Account" },
-] as const;
-
-const NOTIFICATIONS = [
-  { icon: "truck", title: "Shipment in transit", detail: "DN-2024-08741 left Apapa Sorting Facility", time: "2h ago" },
-  { icon: "map-pin", title: "Rider is close", detail: "Emeka is about 4 minutes away", time: "5m ago" },
-  { icon: "tag", title: "20% off this week", detail: "Free delivery on Shop orders over ₦10,000", time: "1d ago" },
-] as const;
+const MENU_LINKS: { tab: string; icon: string; labelKey: TranslationKey }[] = [
+  { tab: "HomeTab", icon: "home", labelKey: "menuHome" },
+  { tab: "ShipTab", icon: "box", labelKey: "menuShipCargo" },
+  { tab: "TrackingTab", icon: "map-pin", labelKey: "menuTrackShipment" },
+  { tab: "RidingTab", icon: "truck", labelKey: "menuDispatchRiding" },
+  { tab: "AccountTab", icon: "user", labelKey: "menuAccount" },
+];
 
 export function AppHeader({ notificationCount = 3 }: { notificationCount?: number }) {
   const navigation = useNavigation<any>();
   const { signOut } = useAuth();
+  const { currency, t } = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unread, setUnread] = useState(notificationCount);
+
+  const NOTIFICATIONS = [
+    { icon: "truck", title: "Shipment in transit", detail: "DN-2024-08741 left Apapa Sorting Facility", time: "2h ago" },
+    { icon: "map-pin", title: "Rider is close", detail: "Emeka is about 4 minutes away", time: "5m ago" },
+    { icon: "tag", title: "20% off this week", detail: `Free delivery on Shop orders over ${formatCurrency(10000, currency)}`, time: "1d ago" },
+  ] as const;
 
   return (
     <View className="h-[55px] w-full flex-row items-center justify-between px-5">
@@ -81,7 +85,7 @@ export function AppHeader({ notificationCount = 3 }: { notificationCount?: numbe
                 className="flex-row items-center gap-3 border-b-[0.661px] border-[rgba(27,67,50,0.07)] py-[14px]"
               >
                 <Feather name={item.icon as any} size={19} color="#1B4332" />
-                <Text className="font-outfit-semibold text-[14px] text-ink">{item.label}</Text>
+                <Text className="font-outfit-semibold text-[14px] text-ink">{t(item.labelKey)}</Text>
               </Pressable>
             ))}
             <Pressable
@@ -92,7 +96,7 @@ export function AppHeader({ notificationCount = 3 }: { notificationCount?: numbe
               className="flex-row items-center gap-3 pt-[14px]"
             >
               <Feather name="log-out" size={19} color="#DC2626" />
-              <Text className="font-outfit-semibold text-[14px] text-[#DC2626]">Log Out</Text>
+              <Text className="font-outfit-semibold text-[14px] text-[#DC2626]">{t("logOut")}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -105,7 +109,7 @@ export function AppHeader({ notificationCount = 3 }: { notificationCount?: numbe
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
             <View className="flex-row items-center justify-between pb-3">
-              <Text className="font-outfit-extrabold text-[16px] text-ink">Notifications</Text>
+              <Text className="font-outfit-extrabold text-[16px] text-ink">{t("notifications")}</Text>
               {unread > 0 ? (
                 <Pressable onPress={() => setUnread(0)}>
                   <Text className="font-outfit-bold text-[12px] text-brand">Mark all read</Text>

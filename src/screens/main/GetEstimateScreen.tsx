@@ -7,14 +7,13 @@ import { ScreenContainer } from "../../ui/ScreenContainer";
 import { BackHeader } from "../../ui/BackHeader";
 import { Button } from "../../ui/Button";
 import { bookShipment, getEstimate, SERVICE_TIER_META, type ServiceTier } from "../../shipments/api";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<ShipStackParamList, "GetEstimate">;
 
-function formatNaira(n: number) {
-  return `₦${n.toLocaleString("en-NG")}`;
-}
-
 export function GetEstimateScreen({ navigation, route }: Props) {
+  const { currency } = useSettings();
   const { senderName, pickupAddress, receiverName, deliveryAddress, cargoType, weightKg, dimensions } = route.params;
   const [service, setService] = useState<ServiceTier>("express");
   const [insured, setInsured] = useState(false);
@@ -112,7 +111,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
               <Pressable
                 key={s.key}
                 onPress={() => setService(s.key)}
-                className={`flex-row items-center gap-3 rounded-2xl border-[1.984px] px-[15px] py-[13px] ${
+                className={`flex-row items-center gap-3 rounded-2xl border-[1.984px] px-[15px] py-[13px] active:opacity-70 ${
                   active ? "border-brand bg-[#EEF1EF]" : "border-[rgba(27,67,50,0.09)] bg-surface"
                 }`}
               >
@@ -125,7 +124,7 @@ export function GetEstimateScreen({ navigation, route }: Props) {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className={`font-outfit-bold text-[14px] ${active ? "text-brand" : "text-ink"}`}>{s.name}</Text>
+                    <Text className={`text-headline font-outfit-semibold ${active ? "text-brand" : "text-ink"}`}>{s.name}</Text>
                     {s.badge ? (
                       <View className={`rounded-md px-[7px] py-[2px] ${active ? "bg-[rgba(27,67,50,0.09)]" : "bg-border"}`}>
                         <Text className={`font-outfit-bold text-[9.5px] tracking-[0.38px] ${active ? "text-brand" : "text-muted"}`}>
@@ -134,9 +133,9 @@ export function GetEstimateScreen({ navigation, route }: Props) {
                       </View>
                     ) : null}
                   </View>
-                  <Text className="pt-px font-outfit text-[11.5px] text-muted">{s.eta}</Text>
+                  <Text className="pt-px text-footnote font-outfit text-muted">{s.eta}</Text>
                 </View>
-                <Text className={`font-outfit-extrabold text-[15px] ${active ? "text-brand" : "text-body"}`}>{formatNaira(tiers[s.key].total)}</Text>
+                <Text className={`font-outfit-extrabold text-[15px] ${active ? "text-brand" : "text-body"}`}>{formatCurrency(tiers[s.key].total, currency)}</Text>
               </Pressable>
             );
           })}
@@ -149,27 +148,27 @@ export function GetEstimateScreen({ navigation, route }: Props) {
           {estimating ? <ActivityIndicator size="small" color="#1B4332" /> : null}
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Base rate</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.base)}</Text>
+          <Text className="text-subhead font-outfit text-[#6B7280]">Base rate</Text>
+          <Text className="text-subhead font-outfit-semibold text-body">{formatCurrency(breakdown.base, currency)}</Text>
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Weight charge ({weightKg} kg × ₦220)</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.weightCharge)}</Text>
+          <Text className="text-subhead font-outfit text-[#6B7280]">Weight charge ({weightKg} kg × {formatCurrency(220, currency)})</Text>
+          <Text className="text-subhead font-outfit-semibold text-body">{formatCurrency(breakdown.weightCharge, currency)}</Text>
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-outfit text-[13px] text-[#6B7280]">Fuel surcharge</Text>
-          <Text className="font-outfit-semibold text-[13px] text-body">{formatNaira(breakdown.fuel)}</Text>
+          <Text className="text-subhead font-outfit text-[#6B7280]">Fuel surcharge</Text>
+          <Text className="text-subhead font-outfit-semibold text-body">{formatCurrency(breakdown.fuel, currency)}</Text>
         </View>
         <View className="flex-row items-center justify-between border-t-[0.661px] border-[rgba(27,67,50,0.1)] pt-3">
           <View className="flex-row items-center gap-2">
             <Feather name="shield" size={18} color="#374151" />
             <View>
-              <Text className="font-outfit-medium text-[13px] text-body">Cargo Insurance</Text>
-              <Text className="font-outfit text-[11px] text-muted">Covers loss & damage</Text>
+              <Text className="text-subhead font-outfit-medium text-body">Cargo Insurance</Text>
+              <Text className="text-footnote font-outfit text-muted">Covers loss & damage</Text>
             </View>
           </View>
           <View className="flex-row items-center gap-2">
-            <Text className="font-outfit text-[12px] text-muted">+₦500</Text>
+            <Text className="text-footnote font-outfit text-muted">+{formatCurrency(500, currency)}</Text>
             <Switch
               value={insured}
               onValueChange={handleInsuredChange}
@@ -180,31 +179,31 @@ export function GetEstimateScreen({ navigation, route }: Props) {
           </View>
         </View>
         <View className="flex-row items-center justify-between border-t-[1.322px] border-[rgba(27,67,50,0.12)] pt-3">
-          <Text className="font-outfit-bold text-[15px] text-ink">Total Estimate</Text>
-          <Text className="font-outfit-black text-[22px] text-brand">{formatNaira(breakdown.total)}</Text>
+          <Text className="text-headline font-outfit-semibold text-ink">Total Estimate</Text>
+          <Text className="text-title font-outfit-black text-brand">{formatCurrency(breakdown.total, currency)}</Text>
         </View>
       </View>
 
       <View className="mt-[14px] flex-row items-center gap-[10px] rounded-2xl border-[0.661px] border-[rgba(30,58,95,0.09)] bg-[rgba(30,58,95,0.05)] px-[15px] py-3">
         <Feather name="map-pin" size={20} color="#1e3a5f" />
         <View className="flex-1">
-          <Text className="font-outfit-semibold text-[12px] text-[#1e3a5f]">
+          <Text className="text-footnote font-outfit-semibold text-[#1e3a5f]">
             Estimated delivery: <Text className="font-outfit-black">{SERVICE_TIER_META.find((s) => s.key === service)?.eta}</Text>
           </Text>
-          <Text className="pt-px font-outfit text-[11px] text-muted">Pickup scheduled within 24 hours of booking</Text>
+          <Text className="pt-px text-footnote font-outfit text-muted">Pickup scheduled within 24 hours of booking</Text>
         </View>
       </View>
 
-      {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+      {error ? <Text className="pt-4 text-center text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
       <View className="pt-5">
         <Button
-          label="CONFIRM & BOOK"
+          label="Confirm & Book"
           icon={<Feather name="check" size={16} color="#fff" />}
           onPress={handleConfirmAndBook}
           loading={booking}
         />
-        <Text className="pt-[10px] text-center font-outfit text-[11px] text-muted">
+        <Text className="pt-[10px] text-center text-footnote font-outfit text-muted">
           You won't be charged until pickup is confirmed.
         </Text>
       </View>

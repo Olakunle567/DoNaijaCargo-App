@@ -27,7 +27,7 @@ export function TextField({
     <View className="flex-row items-center gap-3 rounded-xl border-[1.322px] border-border-brand bg-surface px-[15px] py-[13px]">
       {icon ? <Feather name={icon} size={18} color="#374151" /> : null}
       <TextInput
-        className="flex-1 font-outfit text-[14px] text-ink"
+        className="flex-1 text-body font-outfit text-ink"
         placeholder={placeholder}
         placeholderTextColor="#99A1AF"
         value={value}
@@ -37,7 +37,7 @@ export function TextField({
         autoCapitalize={autoCapitalize}
       />
       {secureTextEntry ? (
-        <Pressable onPress={() => setHidden((h) => !h)} hitSlop={8}>
+        <Pressable onPress={() => setHidden((h) => !h)} hitSlop={13}>
           <Feather name={hidden ? "eye-off" : "eye"} size={18} color="#374151" />
         </Pressable>
       ) : null}

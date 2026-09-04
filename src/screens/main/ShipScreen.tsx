@@ -60,8 +60,8 @@ export function ShipScreen({ navigation }: Props) {
         <AppHeader />
       </View>
       <View className="px-4 pt-4">
-        <Text className="font-outfit-extrabold text-[22px] text-ink">Ship Cargo</Text>
-        <Text className="pt-[2px] font-outfit text-[13px] text-muted">Fill in the details to book your shipment</Text>
+        <Text className="text-title font-outfit-bold text-ink">Ship Cargo</Text>
+        <Text className="pt-1 text-subhead font-outfit text-muted">Fill in the details to book your shipment</Text>
 
         <View className="mt-5 gap-4 rounded-[20px] border-[0.661px] border-[rgba(27,67,50,0.07)] bg-[#EEF1EF] px-4 py-[18px]">
           <SectionLabel label="SENDER & RECEIVER" />
@@ -93,9 +93,9 @@ export function ShipScreen({ navigation }: Props) {
             <Text className="font-outfit-semibold text-[12px] tracking-[0.48px] text-brand">CARGO TYPE</Text>
             <Pressable
               onPress={() => setCargoTypeOpen(true)}
-              className="flex-row items-center justify-between rounded-xl border-[1.322px] border-border-brand bg-white px-[14px] py-3"
+              className="flex-row items-center justify-between rounded-xl border-[1.322px] border-border-brand bg-white px-[14px] py-3 active:opacity-70"
             >
-              <Text className="font-outfit text-[14px] text-ink">{cargoType}</Text>
+              <Text className="text-callout font-outfit text-ink">{cargoType}</Text>
               <Feather name="chevron-down" size={16} color="#6B7280" />
             </Pressable>
           </View>
@@ -112,10 +112,10 @@ export function ShipScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {error ? <Text className="pt-4 text-center font-outfit-semibold text-[12.5px] text-[#DC2626]">{error}</Text> : null}
+        {error ? <Text className="pt-4 text-center text-footnote font-outfit-semibold text-[#DC2626]">{error}</Text> : null}
 
         <View className="py-5">
-          <Button label="GET ESTIMATE" onPress={handleGetEstimate} loading={loading} />
+          <Button label="Get Estimate" onPress={handleGetEstimate} loading={loading} />
         </View>
       </View>
 
@@ -125,7 +125,7 @@ export function ShipScreen({ navigation }: Props) {
             <View className="items-center pb-4">
               <View className="h-1 w-9 rounded-full bg-[#D1D5DB]" />
             </View>
-            <Text className="pb-3 font-outfit-extrabold text-[16px] text-ink">Select Cargo Type</Text>
+            <Text className="pb-3 text-headline font-outfit-semibold text-ink">Select Cargo Type</Text>
             {CARGO_TYPES.map((t) => (
               <Pressable
                 key={t}

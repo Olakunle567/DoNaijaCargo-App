@@ -10,6 +10,8 @@ import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
 import { useWallet } from "../../wallet/useWallet";
 import { topUpWallet } from "../../wallet/api";
+import { useSettings } from "../../settings/SettingsContext";
+import { CURRENCIES, convertToNgn, formatCurrency } from "../../lib/currency";
 
 const STATS = [
   { label: "Shipments", value: "24" },
@@ -24,13 +26,10 @@ const MENU = [
   { key: "settings", icon: "settings", family: "feather", title: "Settings", desc: "App preferences & notifications" },
 ] as const;
 
-function formatNaira(n: number) {
-  return `₦${n.toLocaleString("en-NG")}`;
-}
-
 export function AccountScreen() {
   const { signOut } = useAuth();
   const navigation = useNavigation<any>();
+  const { currency, t } = useSettings();
 
   const [profile, setProfile] = useState({ name: "Adebayo Okafor", email: "adebayo@naijacargo.ng", phone: "+234 812 345 6789" });
   const [draftProfile, setDraftProfile] = useState(profile);
@@ -75,12 +74,15 @@ export function AccountScreen() {
   };
 
   const handleTopUp = async () => {
-    const amount = parseInt(topUpAmount, 10);
-    if (!amount || amount <= 0) return;
+    const enteredAmount = parseFloat(topUpAmount);
+    if (!enteredAmount || enteredAmount <= 0) return;
+    // The wallet always stores NGN — convert whatever currency is currently
+    // displayed back to NGN before sending it to the backend.
+    const amountNgn = Math.round(convertToNgn(enteredAmount, currency));
     setTopUpError("");
     setToppingUp(true);
     try {
-      await topUpWallet({ amount });
+      await topUpWallet({ amount: amountNgn });
       closeTopUp();
     } catch (err) {
       setTopUpError(err instanceof Error ? err.message : "Couldn't add funds. Please try again.");
@@ -135,7 +137,7 @@ export function AccountScreen() {
                 <Text className="font-outfit-semibold text-[12px] tracking-[0.72px] text-white/75">D.O NAIJA WALLET</Text>
               </View>
               <Text className="pt-[6px] font-outfit-black text-[26px] tracking-[-0.26px] text-white">
-                {wallet ? formatNaira(wallet.balance) : "···"}
+                {wallet ? formatCurrency(wallet.balance, currency) : "···"}
               </Text>
               <Text className="pt-1 font-outfit text-[11px] text-white/55">
                 Available balance{wallet ? ` · ${wallet.walletId}` : ""}
@@ -175,8 +177,8 @@ export function AccountScreen() {
 
         <Text className="py-4 text-center font-outfit text-[11px] text-[#CBD5CC]">D.O Naija Cargo v1.4.2</Text>
 
-        <Pressable onPress={signOut} className="items-center rounded-2xl bg-[#145028] py-[15px] shadow">
-          <Text className="font-outfit-extrabold text-[15px] tracking-[1.2px] text-white">LOG OUT</Text>
+        <Pressable onPress={signOut} className="items-center rounded-2xl bg-[#145028] py-[15px] shadow active:opacity-70">
+          <Text className="text-headline font-outfit-semibold text-white">{t("logOut")}</Text>
         </Pressable>
       </View>
 
@@ -205,9 +207,15 @@ export function AccountScreen() {
             </View>
             <Text className="font-outfit-extrabold text-[17px] text-ink">Top Up Wallet</Text>
             <Text className="font-outfit text-[13px] text-muted">
-              Current balance: {wallet ? formatNaira(wallet.balance) : "···"}
+              Current balance: {wallet ? formatCurrency(wallet.balance, currency) : "···"}
             </Text>
-            <TextField icon="credit-card" placeholder="Amount (₦)" value={topUpAmount} onChangeText={setTopUpAmount} keyboardType="number-pad" />
+            <TextField
+              icon="credit-card"
+              placeholder={`Amount (${CURRENCIES[currency].symbol})`}
+              value={topUpAmount}
+              onChangeText={setTopUpAmount}
+              keyboardType="number-pad"
+            />
             {topUpError ? <Text className="font-outfit-semibold text-[12px] text-[#DC2626]">{topUpError}</Text> : null}
             <View className="pt-2">
               <Button label="Add Funds" onPress={handleTopUp} disabled={!topUpAmount.trim()} loading={toppingUp} />

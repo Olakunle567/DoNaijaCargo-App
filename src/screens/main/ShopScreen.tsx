@@ -9,6 +9,8 @@ import { Button } from "../../ui/Button";
 import { useProducts, type Product } from "../../shop/useProducts";
 import { useCart } from "../../shop/useCart";
 import { placeOrder } from "../../shop/api";
+import { useSettings } from "../../settings/SettingsContext";
+import { formatCurrency } from "../../lib/currency";
 
 type Props = NativeStackScreenProps<HomeStackParamList, "Shop">;
 
@@ -33,10 +35,6 @@ const BADGE_COLOR: Record<string, string> = {
   Popular: "bg-brand",
 };
 
-function formatNaira(n: number) {
-  return `₦${n.toLocaleString("en-NG")}`;
-}
-
 function ProductCardSkeleton() {
   return (
     <View className="w-[47.5%] overflow-hidden rounded-[18px] border-[1.322px] border-[rgba(27,67,50,0.07)] bg-white">
@@ -51,6 +49,7 @@ function ProductCardSkeleton() {
 }
 
 export function ShopScreen({ navigation }: Props) {
+  const { currency } = useSettings();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [cartOpen, setCartOpen] = useState(false);
@@ -96,13 +95,14 @@ export function ShopScreen({ navigation }: Props) {
         <View className="flex-row items-center gap-3">
           <Pressable
             onPress={() => navigation.goBack()}
-            className="size-[38px] items-center justify-center rounded-xl border-[0.661px] border-border-brand bg-[#EEF1EF]"
+            className="size-[38px] items-center justify-center rounded-xl border-[0.661px] border-border-brand bg-[#EEF1EF] active:opacity-70"
+            hitSlop={6}
           >
             <Feather name="arrow-left" size={19} color="#1B4332" />
           </Pressable>
           <View>
-            <Text className="font-outfit-extrabold text-[20px] text-ink">Shop</Text>
-            <Text className="font-outfit text-[12px] text-muted">Order goods, we deliver them</Text>
+            <Text className="text-title font-outfit-bold text-ink">Shop</Text>
+            <Text className="text-footnote font-outfit text-muted">Order goods, we deliver them</Text>
           </View>
         </View>
         <Pressable onPress={() => setCartOpen(true)} hitSlop={8} testID="cart-button">
@@ -122,7 +122,7 @@ export function ShopScreen({ navigation }: Props) {
       <View className="mt-4 flex-row items-center justify-between overflow-hidden rounded-2xl bg-brand px-[18px] py-4">
         <View className="w-[180px]">
           <Text className="font-outfit-semibold text-[11px] tracking-[0.66px] text-white/65">FREE DELIVERY</Text>
-          <Text className="pt-1 font-outfit-extrabold text-[16px] text-white">On orders over ₦10,000</Text>
+          <Text className="pt-1 font-outfit-extrabold text-[16px] text-white">On orders over {formatCurrency(10000, currency)}</Text>
           <Text className="pt-1 font-outfit text-[11px] text-white/60">Delivered in 24–48 hours</Text>
         </View>
         <Text className="text-[40px]">🚚</Text>
@@ -182,7 +182,7 @@ export function ShopScreen({ navigation }: Props) {
                     <Text className="font-outfit text-[10px] text-muted">({p.ratingCount})</Text>
                   </View>
                   <View className="flex-row items-center justify-between pt-2">
-                    <Text className="font-outfit-extrabold text-[14px] text-brand">{formatNaira(p.price)}</Text>
+                    <Text className="font-outfit-extrabold text-[14px] text-brand">{formatCurrency(p.price, currency)}</Text>
                     <Pressable
                       onPress={() => cart.addToCart(p.id)}
                       className="size-[30px] items-center justify-center rounded-full bg-brand"
@@ -232,11 +232,11 @@ export function ShopScreen({ navigation }: Props) {
                           </View>
                           <View>
                             <Text className="font-outfit-semibold text-[13px] text-ink">{product.name}</Text>
-                            <Text className="font-outfit text-[11px] text-muted">Qty {item.qty} · {formatNaira(product.price)} each</Text>
+                            <Text className="font-outfit text-[11px] text-muted">Qty {item.qty} · {formatCurrency(product.price, currency)} each</Text>
                           </View>
                         </View>
                         <View className="flex-row items-center gap-3">
-                          <Text className="font-outfit-bold text-[13px] text-brand">{formatNaira(product.price * item.qty)}</Text>
+                          <Text className="font-outfit-bold text-[13px] text-brand">{formatCurrency(product.price * item.qty, currency)}</Text>
                           <Pressable onPress={() => cart.removeFromCart(product.id)} hitSlop={8} testID={`remove-from-cart-${product.id}`}>
                             <Feather name="x" size={16} color="#9CA3AF" />
                           </Pressable>
@@ -245,13 +245,13 @@ export function ShopScreen({ navigation }: Props) {
                     ))}
                     <View className="flex-row items-center justify-between pt-4">
                       <Text className="font-outfit-bold text-[15px] text-ink">Total</Text>
-                      <Text className="font-outfit-black text-[20px] text-brand">{formatNaira(cartTotal)}</Text>
+                      <Text className="font-outfit-black text-[20px] text-brand">{formatCurrency(cartTotal, currency)}</Text>
                     </View>
                     {checkoutError ? (
                       <Text className="pt-3 text-center font-outfit-semibold text-[12px] text-[#DC2626]">{checkoutError}</Text>
                     ) : null}
                     <View className="pt-4">
-                      <Button label="CHECKOUT" onPress={handleCheckout} loading={checkingOut} />
+                      <Button label="Checkout" onPress={handleCheckout} loading={checkingOut} />
                     </View>
                   </>
                 )}
