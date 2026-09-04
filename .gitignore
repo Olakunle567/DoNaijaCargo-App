@@ -49,3 +49,8 @@ functions/node_modules/
 # generated native folders
 /ios
 /android
+
+# Firebase native app config — not secret, but project-specific; EAS gets its
+# own copy via secret file env vars, see .env.example.
+/google-services.json
+/GoogleService-Info.plist
