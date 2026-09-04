@@ -3,7 +3,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
-import { useAuth } from "../../auth/AuthContext";
+import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
@@ -29,6 +29,7 @@ export function SignInScreen({ navigation }: Props) {
 
   const [googleOpen, setGoogleOpen] = useState(false);
   const [appleOpen, setAppleOpen] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
@@ -51,6 +52,28 @@ export function SignInScreen({ navigation }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     }
+  };
+
+  // AUTH_SOCIAL_REAL: the provider's own native UI (Google account picker,
+  // Apple Face ID sheet) replaces our mocked GoogleAuthSheet/AppleAuthSheet.
+  const handleGooglePress = () => {
+    if (!AUTH_SOCIAL_REAL) {
+      setGoogleOpen(true);
+      return;
+    }
+    setError("");
+    setSocialLoading("google");
+    handleSocialSuccess(signInWithGoogle).finally(() => setSocialLoading(null));
+  };
+
+  const handleApplePress = () => {
+    if (!AUTH_SOCIAL_REAL) {
+      setAppleOpen(true);
+      return;
+    }
+    setError("");
+    setSocialLoading("apple");
+    handleSocialSuccess(signInWithApple).finally(() => setSocialLoading(null));
   };
 
   const closeForgot = () => {
@@ -99,8 +122,24 @@ export function SignInScreen({ navigation }: Props) {
       </View>
 
       <View className="gap-[10px]">
-        <Button label="Continue with Google" variant="white" icon={<GoogleIcon size={20} />} onPress={() => setGoogleOpen(true)} />
-        <Button label="Continue with Apple" variant="dark" icon={<AppleIcon size={18} />} onPress={() => setAppleOpen(true)} />
+        <Button
+          label="Continue with Google"
+          variant="white"
+          icon={<GoogleIcon size={20} />}
+          onPress={handleGooglePress}
+          loading={socialLoading === "google"}
+          disabled={socialLoading !== null}
+        />
+        {APPLE_SIGN_IN_SUPPORTED ? (
+          <Button
+            label="Continue with Apple"
+            variant="dark"
+            icon={<AppleIcon size={18} />}
+            onPress={handleApplePress}
+            loading={socialLoading === "apple"}
+            disabled={socialLoading !== null}
+          />
+        ) : null}
       </View>
 
       <View className="flex-row items-center justify-center gap-[6px] pt-7">

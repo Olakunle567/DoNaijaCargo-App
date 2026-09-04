@@ -2,11 +2,16 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/types";
-import { useAuth } from "../../auth/AuthContext";
+import { AUTH_SOCIAL_REAL, APPLE_SIGN_IN_SUPPORTED, useAuth } from "../../auth/AuthContext";
 import { ScreenContainer } from "../../ui/ScreenContainer";
 import { LogoMark } from "../../ui/Logo";
 import { TextField } from "../../ui/TextField";
 import { Button } from "../../ui/Button";
+import { Divider } from "../../ui/Divider";
+import { GoogleIcon } from "../../ui/brand-icons/GoogleIcon";
+import { AppleIcon } from "../../ui/brand-icons/AppleIcon";
+import { GoogleAuthSheet } from "./GoogleAuthSheet";
+import { AppleAuthSheet } from "./AppleAuthSheet";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SignUp">;
 
@@ -18,7 +23,42 @@ export function SignUpScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
+
+  const [googleOpen, setGoogleOpen] = useState(false);
+  const [appleOpen, setAppleOpen] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<"google" | "apple" | null>(null);
+
+  const handleSocialSuccess = async (provider: () => Promise<void>) => {
+    try {
+      await provider();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    }
+  };
+
+  // Firebase treats federated sign-in and sign-up as the same call — it
+  // creates the account on first use — so Google/Apple here just reuse
+  // AuthContext's signInWithGoogle/signInWithApple (same as SignInScreen).
+  const handleGooglePress = () => {
+    if (!AUTH_SOCIAL_REAL) {
+      setGoogleOpen(true);
+      return;
+    }
+    setError("");
+    setSocialLoading("google");
+    handleSocialSuccess(signInWithGoogle).finally(() => setSocialLoading(null));
+  };
+
+  const handleApplePress = () => {
+    if (!AUTH_SOCIAL_REAL) {
+      setAppleOpen(true);
+      return;
+    }
+    setError("");
+    setSocialLoading("apple");
+    handleSocialSuccess(signInWithApple).finally(() => setSocialLoading(null));
+  };
 
   const handleCreateAccount = async () => {
     if (!fullName.trim() || !email.trim() || !phone.trim() || !password || !confirmPassword) {
@@ -96,12 +136,48 @@ export function SignUpScreen({ navigation }: Props) {
 
       <Button label="Create Account" onPress={handleCreateAccount} loading={loading} />
 
+      <View className="py-6">
+        <Divider label="Or continue with" />
+      </View>
+
+      <View className="gap-[10px]">
+        <Button
+          label="Continue with Google"
+          variant="white"
+          icon={<GoogleIcon size={20} />}
+          onPress={handleGooglePress}
+          loading={socialLoading === "google"}
+          disabled={socialLoading !== null}
+        />
+        {APPLE_SIGN_IN_SUPPORTED ? (
+          <Button
+            label="Continue with Apple"
+            variant="dark"
+            icon={<AppleIcon size={18} />}
+            onPress={handleApplePress}
+            loading={socialLoading === "apple"}
+            disabled={socialLoading !== null}
+          />
+        ) : null}
+      </View>
+
       <View className="flex-row items-center justify-center gap-[6px] pt-5">
         <Text className="font-outfit text-[13px] text-muted">Already have an account?</Text>
         <Pressable onPress={() => navigation.navigate("SignIn")}>
           <Text className="font-outfit-bold text-[13px] text-brand">Sign In</Text>
         </Pressable>
       </View>
+
+      <GoogleAuthSheet
+        visible={googleOpen}
+        onClose={() => setGoogleOpen(false)}
+        onSuccess={() => { setGoogleOpen(false); handleSocialSuccess(signInWithGoogle); }}
+      />
+      <AppleAuthSheet
+        visible={appleOpen}
+        onClose={() => setAppleOpen(false)}
+        onSuccess={() => { setAppleOpen(false); handleSocialSuccess(signInWithApple); }}
+      />
     </ScreenContainer>
   );
 }

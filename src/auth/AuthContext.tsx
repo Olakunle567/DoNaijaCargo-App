@@ -1,7 +1,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Platform } from "react-native";
+import Constants from "expo-constants";
+import * as Crypto from "expo-crypto";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import {
   createUserWithEmailAndPassword,
+  getAdditionalUserInfo,
+  GoogleAuthProvider,
+  OAuthProvider,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
@@ -22,18 +31,23 @@ import { auth, db } from "../lib/firebase";
 const INITIAL_WALLET_BALANCE_NGN = 36_650;
 
 /**
- * Google/Apple in SignInScreen still run their mocked, timer-based sheets
- * (GoogleAuthSheet / AppleAuthSheet) — that UI is unchanged. What happens
- * on "success" is gated by this flag:
+ * Gates what Google/Apple sign-in actually do:
  *
- *  - false (default): we sign in, or on first use create, a real Firebase
- *    user for the demo identity the sheet displays, so the rest of the app
- *    gets a genuine session + Firestore profile/wallet instead of a faked
- *    isAuthenticated flip.
- *  - true: signInWithGoogle/signInWithApple should exchange a real
- *    provider credential instead (see TODOs below) — not implemented here.
+ *  - false (default): SignInScreen/SignUpScreen show the mocked, timer-based
+ *    sheets (GoogleAuthSheet / AppleAuthSheet), and "success" signs in, or on
+ *    first use creates, a real Firebase user for the demo identity the sheet
+ *    displays — so the rest of the app gets a genuine session + Firestore
+ *    profile/wallet instead of a faked isAuthenticated flip.
+ *  - true: the mock sheets are bypassed and signInWithGoogle/signInWithApple
+ *    run the real native flow (GoogleSignin / expo-apple-authentication),
+ *    exchanging the provider's credential with Firebase. Requires the
+ *    GOOGLE_SIGNIN_* env vars to be set (see .env.example) and a rebuilt dev
+ *    client — these are native modules, not available in Expo Go.
  */
-const AUTH_SOCIAL_REAL = process.env.EXPO_PUBLIC_AUTH_SOCIAL_REAL === "true";
+export const AUTH_SOCIAL_REAL = process.env.EXPO_PUBLIC_AUTH_SOCIAL_REAL === "true";
+
+/** Apple only offers a native sign-in surface on iOS — no Android equivalent. */
+export const APPLE_SIGN_IN_SUPPORTED = !AUTH_SOCIAL_REAL || Platform.OS === "ios";
 
 // Fixed demo identities, matching GoogleAuthSheet's DEMO_ACCOUNT and
 // AppleAuthSheet's DEMO_APPLE_ID. Password is only ever used for this
@@ -41,6 +55,32 @@ const AUTH_SOCIAL_REAL = process.env.EXPO_PUBLIC_AUTH_SOCIAL_REAL === "true";
 const DEMO_SOCIAL_PASSWORD = "DoNaijaCargoDemo!1";
 const DEMO_GOOGLE_ACCOUNT = { fullName: "Adebayo Okafor", email: "adebayo.okafor@gmail.com" };
 const DEMO_APPLE_ACCOUNT = { fullName: "Adebayo Okafor", email: "adebayo.o@icloud.com" };
+
+const googleSignInConfig = Constants.expoConfig?.extra?.googleSignIn as
+  | { webClientId?: string; iosClientId?: string }
+  | undefined;
+
+if (AUTH_SOCIAL_REAL && googleSignInConfig?.webClientId) {
+  GoogleSignin.configure({
+    webClientId: googleSignInConfig.webClientId,
+    iosClientId: googleSignInConfig.iosClientId,
+    // Firebase's GoogleAuthProvider needs an ID token, which Google only
+    // issues alongside offline access when a webClientId is configured.
+    offlineAccess: false,
+  });
+}
+
+/** True for the "user dismissed the picker" case — not a real error. */
+function isSocialSignInCancellation(error: unknown): boolean {
+  const code = errorCode(error);
+  return code === statusCodes.SIGN_IN_CANCELLED || code === "ERR_REQUEST_CANCELED";
+}
+
+/** Random string for Apple's OpenID `nonce` replay-protection dance. */
+function randomNonce(length = 32): string {
+  const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._";
+  return Array.from(Crypto.getRandomBytes(length), (byte) => charset[byte % charset.length]).join("");
+}
 
 // ---------------------------------------------------------------------------
 // Firebase error → inline message
@@ -64,6 +104,16 @@ function errorCode(error: unknown): string {
 
 function friendlyAuthError(error: unknown): string {
   return AUTH_ERROR_MESSAGES[errorCode(error)] ?? "Something went wrong. Please try again.";
+}
+
+/**
+ * Like `throw new Error(friendlyAuthError(error))`, except a plain Error we
+ * threw ourselves (no `.code` — Firebase/native errors always have one) is
+ * rethrown with its own message intact instead of being genericized.
+ */
+function throwFriendly(error: unknown): never {
+  if (error instanceof Error && !errorCode(error)) throw error;
+  throw new Error(friendlyAuthError(error));
 }
 
 // ---------------------------------------------------------------------------
@@ -155,33 +205,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       signInWithGoogle: async () => {
-        if (AUTH_SOCIAL_REAL) {
-          // TODO(real social auth): get a real Google ID token via
-          // expo-auth-session (e.g. Google.useAuthRequest), then:
-          //   const credential = GoogleAuthProvider.credential(idToken);
-          //   await signInWithCredential(auth, credential);
-          throw new Error("Google sign-in is not configured yet.");
+        if (!AUTH_SOCIAL_REAL) {
+          try {
+            await ensureDemoUser(DEMO_GOOGLE_ACCOUNT);
+          } catch (error) {
+            throw new Error(friendlyAuthError(error));
+          }
+          return;
+        }
+        if (!googleSignInConfig?.webClientId) {
+          throw new Error("Google sign-in isn't configured. Set GOOGLE_SIGNIN_WEB_CLIENT_ID and rebuild.");
         }
         try {
-          await ensureDemoUser(DEMO_GOOGLE_ACCOUNT);
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+          const response = await GoogleSignin.signIn();
+          if (response.type === "cancelled") return;
+
+          const { idToken, user: googleUser } = response.data;
+          if (!idToken) throw new Error("Google didn't return an ID token.");
+
+          const credential = GoogleAuthProvider.credential(idToken);
+          const result = await signInWithCredential(auth, credential);
+          if (getAdditionalUserInfo(result)?.isNewUser) {
+            await createUserDocs(result.user, googleUser.name ?? result.user.displayName ?? "", googleUser.email, "");
+          }
         } catch (error) {
-          throw new Error(friendlyAuthError(error));
+          if (isSocialSignInCancellation(error)) return;
+          throwFriendly(error);
         }
       },
 
       signInWithApple: async () => {
-        if (AUTH_SOCIAL_REAL) {
-          // TODO(real social auth): get a real Apple identity token via
-          // expo-auth-session / expo-apple-authentication, then:
-          //   const provider = new OAuthProvider('apple.com');
-          //   const credential = provider.credential({ idToken, rawNonce });
-          //   await signInWithCredential(auth, credential);
-          throw new Error("Apple sign-in is not configured yet.");
+        if (!AUTH_SOCIAL_REAL) {
+          try {
+            await ensureDemoUser(DEMO_APPLE_ACCOUNT);
+          } catch (error) {
+            throw new Error(friendlyAuthError(error));
+          }
+          return;
         }
         try {
-          await ensureDemoUser(DEMO_APPLE_ACCOUNT);
+          if (Platform.OS !== "ios" || !(await AppleAuthentication.isAvailableAsync())) {
+            throw new Error("Apple sign-in isn't available on this device.");
+          }
+
+          const rawNonce = randomNonce();
+          const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+          const appleCredential = await AppleAuthentication.signInAsync({
+            requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+            nonce: hashedNonce,
+          });
+          if (!appleCredential.identityToken) throw new Error("Apple didn't return an identity token.");
+
+          const provider = new OAuthProvider("apple.com");
+          const credential = provider.credential({ idToken: appleCredential.identityToken, rawNonce });
+          const result = await signInWithCredential(auth, credential);
+
+          if (getAdditionalUserInfo(result)?.isNewUser) {
+            // Apple only shares the name/email on the first-ever authorization for this app.
+            const fullName = [appleCredential.fullName?.givenName, appleCredential.fullName?.familyName]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+            const email = appleCredential.email ?? result.user.email ?? "";
+            if (fullName) await updateProfile(result.user, { displayName: fullName });
+            await createUserDocs(result.user, fullName || result.user.displayName || "", email, "");
+          }
         } catch (error) {
-          throw new Error(friendlyAuthError(error));
+          if (isSocialSignInCancellation(error)) return;
+          throwFriendly(error);
         }
       },
 
